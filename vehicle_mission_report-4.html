@@ -638,7 +638,7 @@
     window.onload = function() {
       populateSearchDropdown();
 
-      const scriptTag = document.getElementById('vehicles-json-data');
+      const scriptTag = document.getElementById('vehicles-json-state');
       if (scriptTag && scriptTag.textContent.trim()) {
         try {
           const parsed = JSON.parse(scriptTag.textContent.trim());
@@ -1268,7 +1268,7 @@
   </script>
 
   <!-- PERSISTENT STATE DATA (For loading if pre-saved) -->
-  <script type="application/json" id="vehicles-json-data">
+  <script type="application/json" id="vehicles-json-state">
   {"global_duration": "", "vehicles": {}}
   </script>
 

@@ -96,7 +96,9 @@ def load_previous_vehicles():
         with open(dest_file, "r", encoding="utf-8") as f:
             content = f.read()
         
-        match = re.search(r'<script type="application/json" id="vehicles-json-data">(.*?)</script>', content, re.DOTALL)
+        match = re.search(r'<script type="application/json" id="vehicles-json-state">(.*?)</script>', content, re.DOTALL)
+        if not match:
+            match = re.search(r'<script type="application/json" id="vehicles-json-data">(.*?)</script>', content, re.DOTALL)
         if match:
             parsed = json.loads(match.group(1).strip())
             if isinstance(parsed, dict) and "vehicles" in parsed:
@@ -125,8 +127,8 @@ def save_state_to_builder(vehicles, global_duration):
         
         # Replace content inside the script tags in the builder
         new_content = re.sub(
-            r'<script type="application/json" id="vehicles-json-data">.*?</script>',
-            f'<script type="application/json" id="vehicles-json-data">\n  {json_str}\n  </script>',
+            r'<script type="application/json" id="vehicles-json-state">.*?</script>',
+            f'<script type="application/json" id="vehicles-json-state">\n  {json_str}\n  </script>',
             content,
             flags=re.DOTALL
         )
@@ -601,7 +603,7 @@ def generate_html_report(vehicles, global_duration):
   </table>
 
   <!-- PERSISTENT STATE DATA -->
-  <script type="application/json" id="vehicles-json-data">
+  <script type="application/json" id="vehicles-json-state">
   {state_json_str}
   </script>
 
