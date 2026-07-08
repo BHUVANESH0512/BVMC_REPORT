@@ -448,7 +448,7 @@
         </div>
         <div class="form-group" style="margin-bottom: 0;">
           <label for="global-duration-input">Global Report Duration Range</label>
-          <input type="text" id="global-duration-input" placeholder="e.g. 08-07-2026 09:00:00 to 08-07-2026 12:00:00">
+          <input type="text" id="global-duration-input" placeholder="e.g. 08-07-2026 09:00:00 to 08-07-2026 12:00:00" onchange="saveStateToServer()">
         </div>
       </div>
 
@@ -910,6 +910,7 @@
       };
 
       updateFleetListUI();
+      saveStateToServer();
       clearForm();
     }
 
@@ -956,11 +957,35 @@
       document.querySelector('.panel').scrollIntoView({ behavior: 'smooth' });
     }
 
+    // SAVE STATE TO PYTHON SERVER
+    function saveStateToServer() {
+      const state_data = {
+        global_duration: document.getElementById('global-duration-input').value.trim(),
+        vehicles: activeFleet
+      };
+      
+      fetch('/api/save', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(state_data)
+      })
+      .then(response => response.json())
+      .then(data => {
+        console.log("State saved to server:", data);
+      })
+      .catch(error => {
+        console.error("Error saving state:", error);
+      });
+    }
+
     // REMOVE VEHICLE FROM FLEET LIST
     function removeVehicle(vin) {
       if (confirm(`Remove vehicle ${vin} from report?`)) {
         delete activeFleet[vin];
         updateFleetListUI();
+        saveStateToServer();
       }
     }
 
@@ -969,6 +994,7 @@
       if (confirm("Are you sure you want to clear all vehicles from the fleet?")) {
         activeFleet = {};
         updateFleetListUI();
+        saveStateToServer();
       }
     }
 

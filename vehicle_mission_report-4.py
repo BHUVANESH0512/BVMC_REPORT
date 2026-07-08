@@ -676,83 +676,89 @@ def generate_html_report(vehicles, global_duration):
     print(f"\n🎉 SUCCESS: HTML Email Report Generated successfully!")
     print(f"Report Saved Location: {dest_file}")
 
-def main():
-    state = load_previous_vehicles()
-    vehicles = state.get("vehicles", {})
-    global_duration = state.get("global_duration", "")
+import http.server
+import socketserver
+import threading
+import time
 
+class CustomHandler(http.server.SimpleHTTPRequestHandler):
+    def log_message(self, format, *args):
+        # Suppress logging to keep console/Render output clean
+        pass
+
+    def do_GET(self):
+        # Serve vehicle_mission_report-4.html as the root index page
+        if self.path == '/':
+            self.path = '/vehicle_mission_report-4.html'
+        return http.server.SimpleHTTPRequestHandler.do_GET(self)
+
+    def do_POST(self):
+        if self.path == '/api/save':
+            content_length = int(self.headers['Content-Length'])
+            post_data = self.rfile.read(content_length)
+            try:
+                data = json.loads(post_data.decode('utf-8'))
+                vehicles = data.get("vehicles", {})
+                global_duration = data.get("global_duration", "")
+                
+                # Save state back to builder
+                save_state_to_builder(vehicles, global_duration)
+                
+                # Generate report
+                generate_html_report(vehicles, global_duration)
+                
+                self.send_response(200)
+                self.send_header('Content-Type', 'application/json')
+                self.end_headers()
+                self.wfile.write(json.dumps({"status": "success"}).encode('utf-8'))
+            except Exception as e:
+                self.send_response(500)
+                self.send_header('Content-Type', 'application/json')
+                self.end_headers()
+                self.wfile.write(json.dumps({"status": "error", "message": str(e)}).encode('utf-8'))
+            return
+        
+        self.send_response(404)
+        self.end_headers()
+
+class CustomTCPServer(socketserver.TCPServer):
+    allow_reuse_address = True
+
+def open_browser(port):
+    time.sleep(1.5)
+    file_url = f"http://localhost:{port}"
+    print(f"\n🚀 Opening visual builder in browser: {file_url}\n")
+    webbrowser.open(file_url)
+
+def main():
+    port = int(os.environ.get("PORT", 8000))
+    
     print("==================================================")
     print("    BOSON MOTOR - MULTI-VEHICLE REPORT GENERATOR")
     print("==================================================")
+    print(f"Starting web server on port {port}...")
     
-    # Prompt user to launch the visual HTML builder in their browser instead
-    launch_web = input("Would you like to open the visual HTML builder in your browser? (Y/n): ").strip().lower()
-    if launch_web in ['', 'y', 'yes']:
-        dir_path = os.path.dirname(os.path.abspath(__file__))
-        builder_file = os.path.join(dir_path, "vehicle_mission_report-4.html")
-        file_url = 'file://' + os.path.abspath(builder_file)
-        print(f"\n🚀 Opening visual builder in browser: {file_url}\n")
-        webbrowser.open(file_url)
-        return
-
-    # Global Time Range Duration
-    print(f"\nCurrent Global Duration Range: '{global_duration}'")
-    gd_input = input("Enter Global Report Duration (e.g. DD-MM-YYYY HH:MM:SS to DD-MM-YYYY HH:MM:SS) or press Enter to keep current: ").strip()
-    if gd_input:
-        global_duration = gd_input
-
-    print("\nType VINs or Nicknames one by one. If you want to finish, save the report,")
-    print("and close the script, type 'exit'.\n")
-
-    while True:
-        vin = input("Enter Vehicle VIN or Nickname (or type 'exit' to save and close): ").strip()
-        if not vin:
-            continue
-        if vin.lower() == 'exit':
-            break
-
-        # Load existing details if already added in this session
-        existing_data = vehicles.get(vin)
-        if not existing_data:
-            # Check if nickname matches
-            for p_vin, data in vehicles.items():
-                if data["nickname"].lower() == vin.lower():
-                    vin = p_vin
-                    existing_data = data
-                    break
-
-        vehicle_data = prompt_vehicle_data(vin, existing_data)
-        if vehicle_data:
-            # Store under actual VIN key
-            actual_vin = vehicle_data["vin"]
-            vehicles[actual_vin] = vehicle_data
-
-            # Ask if they want to edit or remove any of the entered vehicles
-            print(f"\n--- Current Session Vehicles ({len(vehicles)}) ---")
-            for idx, (v_vin, v_data) in enumerate(sorted(vehicles.items()), 1):
-                status_str = v_data.get("status", "healthy").upper()
-                print(f"   {idx}. VIN: {v_vin} ({v_data['nickname']}) | Status: {status_str}")
-            
-            edit_action = input("\nDo you want to edit/remove any logged vehicles? (yes/NO): ").strip().lower()
-            if edit_action in ['yes', 'y']:
-                action_choice = input("Enter VIN to modify or remove: ").strip()
-                if action_choice in vehicles:
-                    sub_action = input("Type [e] to edit, or [r] to remove: ").strip().lower()
-                    if sub_action == 'r':
-                        del vehicles[action_choice]
-                        print(f"Removed vehicle {action_choice} successfully.")
-                    elif sub_action == 'e':
-                        # Re-prompt for the vehicle
-                        v_data = prompt_vehicle_data(action_choice, vehicles[action_choice])
-                        if v_data:
-                            vehicles[action_choice] = v_data
-
-    # Generate output
-    if vehicles:
-        generate_html_report(vehicles, global_duration)
-        save_state_to_builder(vehicles, global_duration)
+    # Launch browser only if NOT running in Render cloud environment
+    if "RENDER" not in os.environ:
+        threading.Thread(target=open_browser, args=(port,), daemon=True).start()
     else:
-        print("No vehicle data inputted. Exit without report.")
+        print("Running in Cloud Environment (Render). Browser launching disabled.")
+        
+    try:
+        # Change cwd to script directory to serve correct files
+        dir_path = os.path.dirname(os.path.abspath(__file__))
+        os.chdir(dir_path)
+        
+        with CustomTCPServer(("0.0.0.0", port), CustomHandler) as httpd:
+            print(f"Server is running at http://0.0.0.0:{port}")
+            print("Press Ctrl+C to stop the server.")
+            httpd.serve_forever()
+    except KeyboardInterrupt:
+        print("\nShutting down server.")
+    except Exception as e:
+        print(f"\n❌ Error starting server: {e}")
 
 if __name__ == "__main__":
     main()
+
+
