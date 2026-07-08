@@ -3,6 +3,7 @@ import os
 import sys
 import json
 import re
+import webbrowser
 
 PREDEFINED_VEHICLES = {
     # Non-Autonomous
@@ -623,8 +624,18 @@ def main():
     print("    BOSON MOTOR - MULTI-VEHICLE REPORT GENERATOR")
     print("==================================================")
     
+    # Prompt user to launch the visual HTML builder in their browser instead
+    launch_web = input("Would you like to open the visual HTML builder in your browser? (Y/n): ").strip().lower()
+    if launch_web in ['', 'y', 'yes']:
+        dir_path = os.path.dirname(os.path.abspath(__file__))
+        builder_file = os.path.join(dir_path, "vehicle_mission_report-4.html")
+        file_url = 'file://' + os.path.abspath(builder_file)
+        print(f"\n🚀 Opening visual builder in browser: {file_url}\n")
+        webbrowser.open(file_url)
+        return
+
     # Global Time Range Duration
-    print(f"Current Global Duration Range: '{global_duration}'")
+    print(f"\nCurrent Global Duration Range: '{global_duration}'")
     gd_input = input("Enter Global Report Duration (e.g. DD-MM-YYYY HH:MM:SS to DD-MM-YYYY HH:MM:SS) or press Enter to keep current: ").strip()
     if gd_input:
         global_duration = gd_input
