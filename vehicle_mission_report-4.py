@@ -666,9 +666,9 @@ def generate_html_report(vehicles, global_duration):
   </table>
 
   <!-- PERSISTENT STATE DATA -->
-  <script type="application/json" id="vehicles-json-state">
+  <script type="application/json" id="vehicles-json-state-report">
   {state_json_str}
-  <\/script>
+  </script>
 
 </body>
 </html>
