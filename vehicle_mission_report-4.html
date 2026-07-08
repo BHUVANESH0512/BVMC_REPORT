@@ -794,9 +794,9 @@
         document.getElementById('health-mdm').className = 'health-toggle-btn active-mdm';
         document.getElementById('mdm-container').style.display = 'block';
         distanceInput.disabled = false;
-        durationInput.disabled = false;
+        durationInput.value = 'Nil';
+        durationInput.disabled = true;
         if (distanceInput.value === 'Nil') distanceInput.value = '';
-        if (durationInput.value === 'Nil') durationInput.value = '';
       }
     }
 
@@ -934,6 +934,12 @@
         durationInput.value = 'Nil';
         distanceInput.disabled = true;
         durationInput.disabled = true;
+      } else if (vehicle.status === 'mdm_issue') {
+        document.getElementById('vt-box-time-input').value = vehicle.vt_box_time || '';
+        distanceInput.value = vehicle.distance;
+        durationInput.value = 'Nil';
+        distanceInput.disabled = false;
+        durationInput.disabled = true;
       } else {
         distanceInput.value = vehicle.distance;
         durationInput.value = vehicle.duration;
@@ -943,8 +949,6 @@
         if (vehicle.status === 'unhealthy') {
           activeIssues = [...vehicle.issues];
           renderIssuesList();
-        } else if (vehicle.status === 'mdm_issue') {
-          document.getElementById('vt-box-time-input').value = vehicle.vt_box_time || '';
         }
       }
       
