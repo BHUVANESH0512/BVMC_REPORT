@@ -290,6 +290,46 @@
       margin-bottom: 12px;
     }
 
+    /* CUSTOM SEARCH DROPDOWN STYLING */
+    .search-container {
+      position: relative;
+    }
+
+    .dropdown-menu {
+      display: none;
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: #ffffff;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      max-height: 250px;
+      overflow-y: auto;
+      z-index: 1000;
+      box-shadow: var(--shadow-md);
+      margin-top: 4px;
+    }
+
+    .dropdown-item {
+      padding: 10px 14px;
+      font-size: 13px;
+      cursor: pointer;
+      border-bottom: 1px solid #f8fafc;
+      transition: background-color 0.15s ease;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .dropdown-item:last-child {
+      border-bottom: none;
+    }
+
+    .dropdown-item:hover {
+      background-color: #f1f5f9;
+    }
+
     /* RIGHT PANEL: VEHICLES LIST PREVIEW */
     .fleet-item {
       background-color: #ffffff;
@@ -411,10 +451,10 @@
           <button class="btn-secondary" onclick="clearForm()" style="padding: 4px 10px; font-size: 11px;">Reset Form</button>
         </div>
 
-        <div class="form-group">
+        <div class="form-group search-container">
           <label for="search-input">Select or Search Predefined Vehicle</label>
-          <input type="text" id="search-input" list="predefined-list" placeholder="Search by VIN or Nickname..." oninput="onSearchSelect()">
-          <datalist id="predefined-list"></datalist>
+          <input type="text" id="search-input" placeholder="Click or type to search by Nickname or VIN..." onfocus="onSearchFocus()" oninput="onSearchInput()" autocomplete="off">
+          <div id="search-dropdown" class="dropdown-menu"></div>
         </div>
 
         <div class="form-row">
@@ -596,17 +636,8 @@
 
     // POPULATE PREDEFINED SEARCH LIST
     window.onload = function() {
-      const listEl = document.getElementById('predefined-list');
-      for (const [vin, data] of Object.entries(PREDEFINED_VEHICLES)) {
-        const optNick = document.createElement('option');
-        optNick.value = `${data.nickname} (${vin})`;
-        listEl.appendChild(optNick);
-        
-        const optVin = document.createElement('option');
-        optVin.value = `${vin} (${data.nickname})`;
-        listEl.appendChild(optVin);
-      }
-      
+      populateSearchDropdown();
+
       const scriptTag = document.getElementById('vehicles-json-data');
       if (scriptTag && scriptTag.textContent.trim()) {
         try {
@@ -626,40 +657,71 @@
       }
     };
 
-    // HANDLER FOR SEARCH AUTOCOMPLETE
-    function onSearchSelect() {
-      const searchVal = document.getElementById('search-input').value.trim();
-      let matchedVin = "";
+    // Populate Custom Search Dropdown
+    function populateSearchDropdown() {
+      const dropdown = document.getElementById('search-dropdown');
+      dropdown.innerHTML = '';
       
-      const bracketMatch = searchVal.match(/\((.*?)\)/);
-      if (bracketMatch && bracketMatch[1]) {
-        const potential = bracketMatch[1];
-        if (PREDEFINED_VEHICLES[potential] || potential.length > 5) {
-          matchedVin = potential;
-        } else {
-          matchedVin = searchVal.split(' ')[0];
-        }
-      } else {
-        if (PREDEFINED_VEHICLES[searchVal]) {
-          matchedVin = searchVal;
-        } else {
-          for (const [vin, data] of Object.entries(PREDEFINED_VEHICLES)) {
-            if (data.nickname.toLowerCase() === searchVal.toLowerCase()) {
-              matchedVin = vin;
-              break;
-            }
-          }
-        }
-      }
-
-      if (matchedVin && PREDEFINED_VEHICLES[matchedVin]) {
-        const data = PREDEFINED_VEHICLES[matchedVin];
-        document.getElementById('vin-input').value = matchedVin;
-        document.getElementById('nickname-input').value = data.nickname;
-        document.getElementById('location-input').value = data.location;
-        setMode(data.mode);
+      for (const [vin, data] of Object.entries(PREDEFINED_VEHICLES)) {
+        const item = document.createElement('div');
+        item.className = 'dropdown-item';
+        item.dataset.vin = vin;
+        item.dataset.search = `${data.nickname} ${vin}`.toLowerCase();
+        item.innerHTML = `<span><strong>${data.nickname}</strong></span><span style="color: var(--text-muted); font-family: monospace; font-size: 11px;">${vin}</span>`;
+        item.onclick = function(e) {
+          e.stopPropagation();
+          selectVehicle(vin, data.nickname);
+        };
+        dropdown.appendChild(item);
       }
     }
+
+    function onSearchFocus() {
+      document.getElementById('search-dropdown').style.display = 'block';
+      filterSearchDropdown();
+    }
+
+    function onSearchInput() {
+      filterSearchDropdown();
+    }
+
+    function filterSearchDropdown() {
+      const query = document.getElementById('search-input').value.toLowerCase().trim();
+      const items = document.querySelectorAll('.dropdown-item');
+      let visibleCount = 0;
+      
+      items.forEach(item => {
+        const searchText = item.dataset.search;
+        if (searchText.includes(query)) {
+          item.style.display = 'flex';
+          visibleCount++;
+        } else {
+          item.style.display = 'none';
+        }
+      });
+      
+      const dropdown = document.getElementById('search-dropdown');
+      dropdown.style.display = visibleCount > 0 ? 'block' : 'none';
+    }
+
+    function selectVehicle(vin, nickname) {
+      document.getElementById('search-input').value = `${nickname} (${vin})`;
+      document.getElementById('search-dropdown').style.display = 'none';
+      
+      const data = PREDEFINED_VEHICLES[vin];
+      document.getElementById('vin-input').value = vin;
+      document.getElementById('nickname-input').value = nickname;
+      document.getElementById('location-input').value = data.location;
+      setMode(data.mode);
+    }
+
+    // Hide dropdown when clicking outside
+    document.addEventListener('click', function(e) {
+      const container = document.querySelector('.search-container');
+      if (container && !container.contains(e.target)) {
+        document.getElementById('search-dropdown').style.display = 'none';
+      }
+    });
 
     // STATE SWITCHERS
     function setMode(mode) {
@@ -1137,7 +1199,7 @@
               <h2 style="margin: 0; font-size: 18px; font-weight: 600; color: #0f172a;">🏢 Customer Vehicles Overview Summary</h2>
             </td>
             <td style="text-align: right; font-size: 12px; color: #64748b; font-weight: 500; vertical-align: middle;">
-              <strong>Report Duration:</strong> ${globalDuration}
+              <strong>Report Duration:</strong> \${globalDuration}
             </td>
           </tr>
         </table>
@@ -1158,7 +1220,7 @@
             </tr>
           </thead>
           <tbody>
-            ${summaryRows}
+            \${summaryRows}
           </tbody>
         </table>
       </td>
@@ -1170,7 +1232,7 @@
         <h2 style="margin: 0 0 20px 0; font-size: 18px; font-weight: 600; color: #0f172a; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px;">
           🔍 Detailed Vehicle Diagnostics
         </h2>
-        ${detailCards}
+        \${detailCards}
       </td>
     </tr>
 
