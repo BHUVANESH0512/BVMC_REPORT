@@ -78,7 +78,7 @@ PREDEFINED_VEHICLES = {
     "MD9GBUE25DC341033": {"nickname": "T6 Vehicle", "location": "Not Available", "mode": "Autonomous"},
     "MD9GBUE22DC341037": {"nickname": "T8 Vehicle", "location": "Not Available", "mode": "Autonomous"},
     "MD9GBUE24DC341038": {"nickname": "T9 Vehicle(HMI)", "location": "Not Available", "mode": "Autonomous"},
-    "MD9GBUE28FC341028": {"nickname": "P53 Vehicle(IST)", "location": "IST", "mode": "Autonomous"},
+    "MD9GBUE28FC341028": {"nickname": "P53 Vehicle", "location": "IST", "mode": "Autonomous"},
     "MD9GBUE2XDC341030": {"nickname": "Black Dragon", "location": "Not Available", "mode": "Autonomous"},
     "MD9GBUE28DC341012": {"nickname": "Yellow Dragon", "location": "Not Available", "mode": "Autonomous"}
 }
@@ -87,7 +87,9 @@ def load_previous_vehicles():
     dir_path = os.path.dirname(os.path.abspath(__file__))
     dest_file = os.path.join(dir_path, "vehicle_mission_report-4.html")
     if not os.path.exists(dest_file):
-        return {}
+        dest_file = os.path.join(dir_path, "vehicle_mission_report_email.html")
+        if not os.path.exists(dest_file):
+            return {"global_duration": "", "vehicles": {}}
     
     try:
         with open(dest_file, "r", encoding="utf-8") as f:
@@ -95,10 +97,43 @@ def load_previous_vehicles():
         
         match = re.search(r'<script type="application/json" id="vehicles-json-data">(.*?)</script>', content, re.DOTALL)
         if match:
-            return json.loads(match.group(1).strip())
+            parsed = json.loads(match.group(1).strip())
+            if isinstance(parsed, dict) and "vehicles" in parsed:
+                return parsed
+            else:
+                return {"global_duration": "", "vehicles": parsed}
     except Exception as e:
         print(f"⚠️ Warning: Could not parse previous state data ({e}). Starting fresh.")
-    return {}
+    return {"global_duration": "", "vehicles": {}}
+
+def save_state_to_builder(vehicles, global_duration):
+    dir_path = os.path.dirname(os.path.abspath(__file__))
+    builder_file = os.path.join(dir_path, "vehicle_mission_report-4.html")
+    if not os.path.exists(builder_file):
+        return
+        
+    try:
+        with open(builder_file, "r", encoding="utf-8") as f:
+            content = f.read()
+            
+        state_data = {
+            "global_duration": global_duration,
+            "vehicles": vehicles
+        }
+        json_str = json.dumps(state_data, indent=2)
+        
+        # Replace content inside the script tags in the builder
+        new_content = re.sub(
+            r'<script type="application/json" id="vehicles-json-data">.*?</script>',
+            f'<script type="application/json" id="vehicles-json-data">\n  {json_str}\n  </script>',
+            content,
+            flags=re.DOTALL
+        )
+        
+        with open(builder_file, "w", encoding="utf-8") as f:
+            f.write(new_content)
+    except Exception as e:
+        print(f"⚠️ Warning: Could not save state back to HTML builder ({e})")
 
 def prompt_vehicle_data(vin, existing_data=None):
     # Determine defaults
@@ -107,8 +142,9 @@ def prompt_vehicle_data(vin, existing_data=None):
             "nickname": existing_data.get("nickname", "Not Named"),
             "location": existing_data.get("location", "Not Available"),
             "mode": existing_data.get("mode", "Non-Autonomous"),
-            "is_healthy": existing_data.get("is_healthy", True),
+            "status": existing_data.get("status", "healthy"),
             "issues": existing_data.get("issues", []),
+            "timestamp": existing_data.get("timestamp", ""),
             "distance": existing_data.get("distance", ""),
             "duration": existing_data.get("duration", "")
         }
@@ -118,45 +154,59 @@ def prompt_vehicle_data(vin, existing_data=None):
             "nickname": PREDEFINED_VEHICLES[vin]["nickname"],
             "location": PREDEFINED_VEHICLES[vin]["location"],
             "mode": PREDEFINED_VEHICLES[vin]["mode"],
-            "is_healthy": True,
+            "status": "healthy",
             "issues": [],
+            "timestamp": "",
             "distance": "",
             "duration": ""
         }
         print(f"\n--- Loaded Predefined Details for Vehicle: {vin} ---")
     else:
-        defaults = {
-            "nickname": "Not Named",
-            "location": "Not Available",
-            "mode": "Non-Autonomous",
-            "is_healthy": True,
-            "issues": [],
-            "distance": "",
-            "duration": ""
-        }
-        print(f"\n--- Entering details for new vehicle: {vin} ---")
+        # Search by nickname prefix match if not directly matching VIN
+        matched_vin = None
+        for p_vin, data in PREDEFINED_VEHICLES.items():
+            if data["nickname"].lower() == vin.lower():
+                matched_vin = p_vin
+                break
+        
+        if matched_vin:
+            vin = matched_vin
+            defaults = {
+                "nickname": PREDEFINED_VEHICLES[vin]["nickname"],
+                "location": PREDEFINED_VEHICLES[vin]["location"],
+                "mode": PREDEFINED_VEHICLES[vin]["mode"],
+                "status": "healthy",
+                "issues": [],
+                "timestamp": "",
+                "distance": "",
+                "duration": ""
+            }
+            print(f"\n--- Loaded Predefined Details (Matched by Nickname) for: {vin} ---")
+        else:
+            defaults = {
+                "nickname": "Not Named",
+                "location": "Not Available",
+                "mode": "Non-Autonomous",
+                "status": "healthy",
+                "issues": [],
+                "timestamp": "",
+                "distance": "",
+                "duration": ""
+            }
+            print(f"\n--- Entering details for new vehicle: {vin} ---")
 
-    # Display Nickname and Location info
     print(f"Nickname: {defaults['nickname']}  |  Location: {defaults['location']}  |  Mode: {defaults['mode']}")
 
-    # Ask if they want to modify Nickname/Location/Mode or skip
     modify_input = input("Modify vehicle details (Nickname/Location/Mode)? (y/N): ").strip().lower()
     nickname = defaults['nickname']
     location = defaults['location']
     mode = defaults['mode']
 
     if modify_input in ['y', 'yes']:
-        # 1. Nickname
         nick = input(f"   Enter Nickname (default: '{defaults['nickname']}'): ").strip()
-        if nick:
-            nickname = nick
-
-        # 2. Location
+        if nick: nickname = nick
         loc = input(f"   Enter Location (default: '{defaults['location']}'): ").strip()
-        if loc:
-            location = loc
-
-        # 3. Mode (Autonomous or Non-Autonomous)
+        if loc: location = loc
         curr_mode = defaults['mode']
         mode_input = input(f"   Select Mode: [1] Autonomous, [2] Non-Autonomous (default: '{curr_mode}'): ").strip()
         if mode_input:
@@ -164,28 +214,53 @@ def prompt_vehicle_data(vin, existing_data=None):
                 mode_input = input("      Please enter 1 or 2: ").strip()
             mode = "Autonomous" if mode_input == '1' else "Non-Autonomous"
 
-    # 4. Health status
-    curr_health = "Yes" if defaults['is_healthy'] else "No"
-    healthy_input = input(f"Is the vehicle healthy? (Yes/No, default: '{curr_health}'): ").strip().lower()
-    if not healthy_input:
-        is_healthy = defaults['is_healthy']
-        issues = defaults['issues']
+    # Status Prompts
+    print(f"Select Health / Activity Status (current: '{defaults['status']}'):")
+    print("   [1] Healthy")
+    print("   [2] Issues Detected")
+    print("   [3] Not Active")
+    status_input = input("   Enter status choice (1, 2, or 3, or Enter to keep current): ").strip()
+    if not status_input:
+        status = defaults['status']
     else:
-        while healthy_input not in ['yes', 'y', 'no', 'n']:
-            healthy_input = input("   Please enter Yes or No: ").strip().lower()
-        is_healthy = healthy_input in ['yes', 'y']
-        issues = []
+        while status_input not in ['1', '2', '3']:
+            status_input = input("   Please enter 1, 2, or 3: ").strip()
+        status = "healthy" if status_input == '1' else ("unhealthy" if status_input == '2' else "inactive")
 
-    # 5. Issues (if unhealthy)
-    if not is_healthy:
+    issues = []
+    timestamp = ""
+    distance = ""
+    duration = ""
+
+    if status == 'healthy':
+        # Prompt for Distance/Duration
+        dist_prompt = "Enter Distance Travelled in km"
+        if defaults['distance'] and defaults['distance'] != 'Nil':
+            dist_prompt += f" (default: '{defaults['distance']}')"
+        dist_prompt += ": "
+        distance = input(dist_prompt).strip()
+        if not distance: distance = defaults['distance']
+        while not distance or distance == 'Nil':
+            distance = input("   Distance is required. Enter Distance: ").strip()
+
+        dur_prompt = "Enter Data Logged Duration"
+        if defaults['duration'] and defaults['duration'] != 'Nil':
+            dur_prompt += f" (default: '{defaults['duration']}')"
+        dur_prompt += ": "
+        duration = input(dur_prompt).strip()
+        if not duration: duration = defaults['duration']
+        while not duration or duration == 'Nil':
+            duration = input("   Duration is required. Enter Duration: ").strip()
+
+    elif status == 'unhealthy':
+        # Prompt for Issues
         keep_issues = 'n'
-        if existing_data and not existing_data.get('is_healthy', True) and existing_data.get('issues'):
+        if existing_data and existing_data.get('status') == 'unhealthy' and existing_data.get('issues'):
             print(f"   Current issues: {existing_data['issues']}")
             keep_input = input("   Do you want to keep the current issues? (Yes/No, default: Yes): ").strip().lower()
             if not keep_input or keep_input in ['yes', 'y']:
                 keep_issues = 'y'
                 issues = existing_data['issues']
-
         if keep_issues != 'y':
             print("\n   --- Enter Vehicle Issues (Press Enter on an empty line to finish) ---")
             idx = 1
@@ -193,48 +268,57 @@ def prompt_vehicle_data(vin, existing_data=None):
                 issue = input(f"      Issue #{idx}: ").strip()
                 if not issue:
                     if not issues:
-                        print("      At least one issue is required if the vehicle is not healthy.")
+                        print("      At least one issue is required if status is Issues Detected.")
                         continue
                     break
                 issues.append(issue)
                 idx += 1
+        
+        # Prompt for Distance/Duration
+        dist_prompt = "Enter Distance Travelled in km"
+        if defaults['distance'] and defaults['distance'] != 'Nil':
+            dist_prompt += f" (default: '{defaults['distance']}')"
+        dist_prompt += ": "
+        distance = input(dist_prompt).strip()
+        if not distance: distance = defaults['distance']
+        while not distance or distance == 'Nil':
+            distance = input("   Distance is required. Enter Distance: ").strip()
 
-    # 6. Distance
-    dist_prompt = "Enter Distance Travelled in km"
-    if defaults['distance']:
-        dist_prompt += f" (default: '{defaults['distance']}')"
-    dist_prompt += ": "
-    
-    distance = input(dist_prompt).strip()
-    if not distance:
-        distance = defaults['distance']
-    while not distance:
-        distance = input("   Distance is required. Enter Distance: ").strip()
+        dur_prompt = "Enter Data Logged Duration"
+        if defaults['duration'] and defaults['duration'] != 'Nil':
+            dur_prompt += f" (default: '{defaults['duration']}')"
+        dur_prompt += ": "
+        duration = input(dur_prompt).strip()
+        if not duration: duration = defaults['duration']
+        while not duration or duration == 'Nil':
+            duration = input("   Duration is required. Enter Duration: ").strip()
 
-    # 7. Duration
-    dur_prompt = "Enter Data Logged Duration"
-    if defaults['duration']:
-        dur_prompt += f" (default: '{defaults['duration']}')"
-    dur_prompt += ": "
-    
-    duration = input(dur_prompt).strip()
-    if not duration:
-        duration = defaults['duration']
-    while not duration:
-        duration = input("   Duration is required. Enter Duration: ").strip()
+    elif status == 'inactive':
+        # Inactive means Distance/Duration are Nil
+        distance = "Nil"
+        duration = "Nil"
+        # Prompt for last active timestamp
+        time_prompt = "Enter Last Active Timestamp"
+        if defaults['timestamp']:
+            time_prompt += f" (default: '{defaults['timestamp']}')"
+        time_prompt += ": "
+        timestamp = input(time_prompt).strip()
+        if not timestamp:
+            timestamp = defaults['timestamp'] if defaults['timestamp'] else "Not Available"
 
     temp_data = {
         "vin": vin,
         "nickname": nickname,
         "location": location,
         "mode": mode,
-        "is_healthy": is_healthy,
+        "status": status,
+        "is_healthy": (status == 'healthy'),
         "issues": issues,
+        "timestamp": timestamp,
         "distance": distance,
         "duration": duration
     }
 
-    # Ask: add to report or not
     add_report_input = input("\nAdd this vehicle to the report? (Y/n): ").strip().lower()
     if not add_report_input or add_report_input in ['y', 'yes']:
         return temp_data
@@ -242,11 +326,10 @@ def prompt_vehicle_data(vin, existing_data=None):
         print("Vehicle entry discarded.")
         return None
 
-def generate_html_report(vehicles):
+def generate_html_report(vehicles, global_duration):
     dir_path = os.path.dirname(os.path.abspath(__file__))
-    dest_file = os.path.join(dir_path, "vehicle_mission_report-4.html")
+    dest_file = os.path.join(dir_path, "vehicle_mission_report_email.html")
 
-    # Start building the static HTML email
     html_out = """<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
@@ -280,22 +363,6 @@ def generate_html_report(vehicles):
       border-radius: 12px;
       text-transform: uppercase;
     }
-    .badge-green {
-      background-color: #dcfce7;
-      color: #16a34a;
-    }
-    .badge-red {
-      background-color: #fee2e2;
-      color: #dc2626;
-    }
-    .badge-blue {
-      background-color: #dbeafe;
-      color: #1d4ed8;
-    }
-    .badge-grey {
-      background-color: #f1f3f5;
-      color: #475569;
-    }
   </style>
 </head>
 <body style="margin: 0; padding: 20px 0; background-color: #f1f5f9; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
@@ -306,13 +373,12 @@ def generate_html_report(vehicles):
     <tr>
       <td bgcolor="#1e293b" style="padding: 30px 24px; text-align: center;">
         <h1 style="margin: 0; color: #ffffff; font-size: 24px; font-weight: 700; letter-spacing: -0.5px;">Boson Motor</h1>
-        <p style="margin: 6px 0 0 0; color: #94a3b8; font-size: 14px; font-weight: 500;">Vehicle Dashboard &mdash; Static Fleet Mission Report</p>
+        <p style="margin: 6px 0 0 0; color: #94a3b8; font-size: 14px; font-weight: 500;">Vehicle Dashboard &mdash; Static Customer Vehicles Mission Report</p>
       </td>
     </tr>
 """
 
     if not vehicles:
-        # Empty State
         html_out += """
     <!-- EMPTY STATE -->
     <tr>
@@ -327,15 +393,22 @@ def generate_html_report(vehicles):
 """
     else:
         # Summary Section
-        html_out += """
+        html_out += f"""
     <!-- SUMMARY SECTION -->
     <tr>
       <td style="padding: 24px;">
-        <h2 style="margin: 0 0 16px 0; font-size: 18px; font-weight: 600; color: #0f172a; border-bottom: 2px solid #f1f5f9; padding-bottom: 8px;">
-          🏢 Fleet Overview Summary
-        </h2>
+        <table width="100%" border="0" cellpadding="0" cellspacing="0" style="border-bottom: 2px solid #f1f5f9; padding-bottom: 8px; margin-bottom: 16px;">
+          <tr>
+            <td style="vertical-align: middle;">
+              <h2 style="margin: 0; font-size: 18px; font-weight: 600; color: #0f172a;">🏢 Customer Vehicles Overview Summary</h2>
+            </td>
+            <td style="text-align: right; font-size: 12px; color: #64748b; font-weight: 500; vertical-align: middle;">
+              <strong>Report Duration:</strong> {global_duration}
+            </td>
+          </tr>
+        </table>
         <p style="font-size: 13px; color: #64748b; margin-bottom: 16px;">
-          This report compiles vehicle capture data for the fleet. Click on any VIN below to jump directly to its detailed diagnostics and issues log.
+          This report compiles vehicle capture data for customer vehicles. Click on any VIN below to jump directly to its detailed diagnostics and status log.
         </p>
 
         <table width="100%" border="0" cellpadding="0" cellspacing="0" style="font-size: 13px;">
@@ -354,10 +427,21 @@ def generate_html_report(vehicles):
 """
         for vin in sorted(vehicles.keys()):
             val = vehicles[vin]
-            is_healthy = val["is_healthy"]
-            status_badge = '<span class="badge badge-green">✓ Healthy</span>' if is_healthy else f'<span class="badge badge-red">✗ {len(val["issues"])} Issues</span>'
-            mode_badge = f'<span class="badge badge-blue">{val.get("mode", "Autonomous")}</span>'
+            status = val.get("status", "healthy")
             
+            # Badge rendering
+            if status == 'healthy':
+                status_badge = '<span style="display: inline-block; padding: 4px 8px; font-size: 11px; font-weight: bold; border-radius: 12px; background-color: #dcfce7; color: #16a34a; text-transform: uppercase;">✓ Healthy</span>'
+            elif status == 'unhealthy':
+                status_badge = f'<span style="display: inline-block; padding: 4px 8px; font-size: 11px; font-weight: bold; border-radius: 12px; background-color: #fee2e2; color: #dc2626; text-transform: uppercase;">✗ {len(val.get("issues", []))} Issues</span>'
+            else:
+                status_badge = '<span style="display: inline-block; padding: 4px 8px; font-size: 11px; font-weight: bold; border-radius: 12px; background-color: #f1f3f5; color: #475569; text-transform: uppercase;">⊘ Not Active</span>'
+
+            mode_badge = f'<span style="display: inline-block; padding: 4px 8px; font-size: 11px; font-weight: bold; border-radius: 12px; background-color: #dbeafe; color: #1d4ed8; text-transform: uppercase;">{val["mode"]}</span>'
+            
+            dist_str = f"{val['distance']} km" if status != 'inactive' else "Nil"
+            dur_str = val['duration'] if status != 'inactive' else "Nil"
+
             html_out += f"""
             <tr style="border-bottom: 1px solid #f1f5f9;">
               <td style="padding: 12px; border-bottom: 1px solid #f1f5f9;"><a href="#vin-{vin}" style="color: #2563eb; font-weight: 600; text-decoration: none;">{vin}</a></td>
@@ -365,8 +449,8 @@ def generate_html_report(vehicles):
               <td style="padding: 12px; border-bottom: 1px solid #f1f5f9; color: #475569;">{val['location']}</td>
               <td style="padding: 12px; border-bottom: 1px solid #f1f5f9;">{mode_badge}</td>
               <td style="padding: 12px; border-bottom: 1px solid #f1f5f9;">{status_badge}</td>
-              <td style="padding: 12px; border-bottom: 1px solid #f1f5f9; text-align: right; font-weight: 600;">{val['distance']} km</td>
-              <td style="padding: 12px; border-bottom: 1px solid #f1f5f9; text-align: right; font-weight: 600;">{val['duration']}</td>
+              <td style="padding: 12px; border-bottom: 1px solid #f1f5f9; text-align: right; font-weight: 600;">{dist_str}</td>
+              <td style="padding: 12px; border-bottom: 1px solid #f1f5f9; text-align: right; font-weight: 600;">{dur_str}</td>
             </tr>
             """
 
@@ -386,21 +470,35 @@ def generate_html_report(vehicles):
 
         for vin in sorted(vehicles.keys()):
             val = vehicles[vin]
-            is_healthy = val["is_healthy"]
-            card_border_color = "#22c55e" if is_healthy else "#ef4444"
-            status_header = '<span style="color: #16a34a; font-weight: bold;">HEALTHY</span>' if is_healthy else '<span style="color: #dc2626; font-weight: bold;">ISSUE DETECTED</span>'
+            status = val.get("status", "healthy")
             
-            # Anomaly Rows Table
-            issues_list = val["issues"]
-            if is_healthy:
+            card_border_color = "#22c55e"
+            status_header = '<span style="color: #16a34a; font-weight: bold;">HEALTHY</span>'
+            
+            if status == 'unhealthy':
+                card_border_color = "#ef4444"
+                status_header = '<span style="color: #dc2626; font-weight: bold;">ISSUE DETECTED</span>'
+            elif status == 'inactive':
+                card_border_color = "#64748b"
+                status_header = '<span style="color: #64748b; font-weight: bold;">NOT ACTIVE</span>'
+
+            # Anomaly content
+            if status == 'healthy':
                 anomalies_section = """
                     <div style="background-color: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px; padding: 12px; color: #166534; font-size: 13px; font-weight: 500;">
                       ✓ No system anomalies or safety faults detected.
                     </div>
                 """
+            elif status == 'inactive':
+                timestamp_str = val.get("timestamp") or "Not Available"
+                anomalies_section = f"""
+                    <div style="background-color: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px; color: #475569; font-size: 13px; font-weight: 500;">
+                      ⊘ Vehicle is currently Not Active / Not Available. Last active timestamp: <strong>{timestamp_str}</strong>
+                    </div>
+                """
             else:
                 table_rows = ""
-                for idx, issue in enumerate(issues_list, start=1):
+                for idx, issue in enumerate(val.get("issues", []), start=1):
                     table_rows += f"""
                     <tr style="border-bottom: 1px solid #e2e8f0;">
                       <td style="padding: 8px 10px; border-bottom: 1px solid #e2e8f0; color: #0f172a; font-family: monospace; text-align: left;">{idx:03d}</td>
@@ -427,6 +525,9 @@ def generate_html_report(vehicles):
                     </table>
                 """
 
+            dist_val = f"{val['distance']} km" if status != 'inactive' else "Nil"
+            dur_val = val['duration'] if status != 'inactive' else "Nil"
+
             html_out += f"""
         <!-- VEHICLE CARD: {vin} -->
         <div id="vin-{vin}" style="background-color: #ffffff; border: 1px solid #e2e8f0; border-left: 5px solid {card_border_color}; border-radius: 6px; padding: 20px; margin-bottom: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.02);">
@@ -438,7 +539,7 @@ def generate_html_report(vehicles):
                 <span style="font-size: 16px; font-weight: 700; color: #0f172a; font-family: Courier, monospace;">VIN: {vin}</span>
                 <div style="font-size: 11px; color: #64748b; margin-top: 4px;">Nickname: <strong>{val['nickname']}</strong> &nbsp;|&nbsp; Location: <strong>{val['location']}</strong></div>
               </td>
-              <td style="text-align: right; valign: top;">
+              <td style="text-align: right; vertical-align: top;">
                 {status_header}
               </td>
             </tr>
@@ -450,48 +551,43 @@ def generate_html_report(vehicles):
               <td width="25%" style="padding-right: 8px;">
                 <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 8px; text-align: center;">
                   <div style="font-size: 9px; color: #64748b; text-transform: uppercase; margin-bottom: 2px;">Vehicle Mode</div>
-                  <div style="font-size: 13px; font-weight: 700; color: #1d4ed8;">{val.get('mode', 'Autonomous')}</div>
+                  <div style="font-size: 13px; font-weight: 700; color: #1d4ed8;">{val['mode']}</div>
                 </div>
               </td>
               <td width="25%" style="padding-left: 4px; padding-right: 4px;">
                 <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 8px; text-align: center;">
                   <div style="font-size: 9px; color: #64748b; text-transform: uppercase; margin-bottom: 2px;">Distance Travelled</div>
-                  <div style="font-size: 13px; font-weight: 700; color: #0f172a;">{val['distance']} km</div>
+                  <div style="font-size: 13px; font-weight: 700; color: #0f172a;">{dist_val}</div>
                 </div>
               </td>
               <td width="25%" style="padding-left: 4px; padding-right: 4px;">
                 <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 8px; text-align: center;">
                   <div style="font-size: 9px; color: #64748b; text-transform: uppercase; margin-bottom: 2px;">Logged Duration</div>
-                  <div style="font-size: 13px; font-weight: 700; color: #0f172a;">{val['duration']}</div>
+                  <div style="font-size: 13px; font-weight: 700; color: #0f172a;">{dur_val}</div>
                 </div>
               </td>
               <td width="25%" style="padding-left: 8px;">
                 <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 8px; text-align: center;">
                   <div style="font-size: 9px; color: #64748b; text-transform: uppercase; margin-bottom: 2px;">Total Issues Logged</div>
-                  <div style="font-size: 13px; font-weight: 700; color: {'#dc2626' if not is_healthy else '#16a34a'};">{len(issues_list)}</div>
+                  <div style="font-size: 13px; font-weight: 700; color: { '#16a34a' if status == 'healthy' else ('#64748b' if status == 'inactive' else '#dc2626') };">{len(val.get('issues', []))}</div>
                 </div>
               </td>
             </tr>
           </table>
 
-          <!-- Anomalies Table / Warning Section -->
-          <div style="font-size: 12px; font-weight: 600; color: #475569; margin-bottom: 8px; text-transform: uppercase;">⚠️ System Anomalies & Warnings Log</div>
+          <div style="font-size: 12px; font-weight: 600; color: #475569; margin-bottom: 8px; text-transform: uppercase;">⚠️ System Diagnostics & Activity Status</div>
           {anomalies_section}
 
           <div style="text-align: right; margin-top: 15px;">
-            <a href="#" style="font-size: 11px; color: #2563eb; text-decoration: none; font-weight: 600;">&uarr; Back to Fleet Overview</a>
+            <a href="#" style="font-size: 11px; color: #2563eb; text-decoration: none; font-weight: 600;">&uarr; Back to Customer Vehicles Overview</a>
           </div>
-
         </div>
-            """
+        """
 
-        html_out += """
-      </td>
-    </tr>
-"""
+    # Persistent JSON state block
+    state_json = {"global_duration": global_duration, "vehicles": vehicles}
+    state_json_str = json.dumps(state_json)
 
-    # Add the hidden persistent JSON script block at the bottom
-    json_data = json.dumps(vehicles)
     html_out += f"""
     <!-- FOOTER -->
     <tr>
@@ -505,7 +601,7 @@ def generate_html_report(vehicles):
 
   <!-- PERSISTENT STATE DATA -->
   <script type="application/json" id="vehicles-json-data">
-  {json_data}
+  {state_json_str}
   </script>
 
 </body>
@@ -515,72 +611,76 @@ def generate_html_report(vehicles):
     with open(dest_file, "w", encoding="utf-8") as f:
         f.write(html_out)
 
-    print("\n==================================================")
-    print("🎉 SUCCESS: HTML Report Populated Successfully!")
-    print(f"📁 File Saved Location: {dest_file}")
-    print("💡 You can now open this HTML file or attach it to your email.")
-    print("==================================================")
-
+    print(f"\n🎉 SUCCESS: HTML Email Report Generated successfully!")
+    print(f"Report Saved Location: {dest_file}")
 
 def main():
-    # Load previous records from HTML if it exists
-    vehicles = load_previous_vehicles()
-    
+    state = load_previous_vehicles()
+    vehicles = state.get("vehicles", {})
+    global_duration = state.get("global_duration", "")
+
     print("==================================================")
     print("    BOSON MOTOR - MULTI-VEHICLE REPORT GENERATOR")
     print("==================================================")
-    print("Type VINs one by one. If you want to finish, save the report,")
-    print("and close the script, type 'exit'.")
+    
+    # Global Time Range Duration
+    print(f"Current Global Duration Range: '{global_duration}'")
+    gd_input = input("Enter Global Report Duration (e.g. DD-MM-YYYY HH:MM:SS to DD-MM-YYYY HH:MM:SS) or press Enter to keep current: ").strip()
+    if gd_input:
+        global_duration = gd_input
 
-    try:
-        while True:
-            # Display entered vehicles
-            if vehicles:
-                print("\n--- Currently Stored Vehicles ---")
-                for idx, (v_vin, v_data) in enumerate(sorted(vehicles.items()), start=1):
-                    status_str = "Healthy" if v_data['is_healthy'] else f"Unhealthy ({len(v_data['issues'])} issues)"
-                    mode_str = v_data.get('mode', 'Autonomous')
-                    print(f"  {idx}. VIN: {v_vin} | '{v_data['nickname']}' | Loc: '{v_data['location']}' | Mode: {mode_str} | Status: {status_str}")
-                print("---------------------------------")
+    print("\nType VINs or Nicknames one by one. If you want to finish, save the report,")
+    print("and close the script, type 'exit'.\n")
 
-            vin = input("\nEnter Vehicle VIN (or type 'exit' to save and close): ").strip()
-            if not vin:
-                continue
+    while True:
+        vin = input("Enter Vehicle VIN or Nickname (or type 'exit' to save and close): ").strip()
+        if not vin:
+            continue
+        if vin.lower() == 'exit':
+            break
 
-            if vin.lower() == 'exit':
-                print("\nExiting and generating HTML report...")
-                break
+        # Load existing details if already added in this session
+        existing_data = vehicles.get(vin)
+        if not existing_data:
+            # Check if nickname matches
+            for p_vin, data in vehicles.items():
+                if data["nickname"].lower() == vin.lower():
+                    vin = p_vin
+                    existing_data = data
+                    break
 
-            if vin in vehicles:
-                print(f"\n⚠️ Vehicle with VIN '{vin}' already exists in the list.")
-                action = input("   Choose action: [E]dit details, [R]emove vehicle, or [C]ancel: ").strip().lower()
-                while action not in ['e', 'edit', 'r', 'remove', 'c', 'cancel']:
-                    action = input("   Please enter E (Edit), R (Remove), or C (Cancel): ").strip().lower()
-                
-                if action in ['e', 'edit']:
-                    result = prompt_vehicle_data(vin, vehicles[vin])
-                    if result is not None:
-                        vehicles[vin] = result
-                        print(f"   ✓ Vehicle '{vin}' updated.")
-                elif action in ['r', 'remove']:
-                    del vehicles[vin]
-                    print(f"   ✓ Vehicle '{vin}' removed from the list.")
-                else:
-                    print("   ✓ Action cancelled.")
-            else:
-                # Add new vehicle
-                result = prompt_vehicle_data(vin)
-                if result is not None:
-                    vehicles[vin] = result
-                    print(f"   ✓ Vehicle '{vin}' added.")
+        vehicle_data = prompt_vehicle_data(vin, existing_data)
+        if vehicle_data:
+            # Store under actual VIN key
+            actual_vin = vehicle_data["vin"]
+            vehicles[actual_vin] = vehicle_data
 
-        # Save and generate HTML
-        generate_html_report(vehicles)
+            # Ask if they want to edit or remove any of the entered vehicles
+            print(f"\n--- Current Session Vehicles ({len(vehicles)}) ---")
+            for idx, (v_vin, v_data) in enumerate(sorted(vehicles.items()), 1):
+                status_str = v_data.get("status", "healthy").upper()
+                print(f"   {idx}. VIN: {v_vin} ({v_data['nickname']}) | Status: {status_str}")
+            
+            edit_action = input("\nDo you want to edit/remove any logged vehicles? (yes/NO): ").strip().lower()
+            if edit_action in ['yes', 'y']:
+                action_choice = input("Enter VIN to modify or remove: ").strip()
+                if action_choice in vehicles:
+                    sub_action = input("Type [e] to edit, or [r] to remove: ").strip().lower()
+                    if sub_action == 'r':
+                        del vehicles[action_choice]
+                        print(f"Removed vehicle {action_choice} successfully.")
+                    elif sub_action == 'e':
+                        # Re-prompt for the vehicle
+                        v_data = prompt_vehicle_data(action_choice, vehicles[action_choice])
+                        if v_data:
+                            vehicles[action_choice] = v_data
 
-    except KeyboardInterrupt:
-        print("\n\nScript cancelled by user. Generating report with current vehicles...")
-        generate_html_report(vehicles)
-        sys.exit(0)
+    # Generate output
+    if vehicles:
+        generate_html_report(vehicles, global_duration)
+        save_state_to_builder(vehicles, global_duration)
+    else:
+        print("No vehicle data inputted. Exit without report.")
 
 if __name__ == "__main__":
     main()
