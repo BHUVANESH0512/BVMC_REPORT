@@ -148,6 +148,7 @@ def prompt_vehicle_data(vin, existing_data=None):
             "status": existing_data.get("status", "healthy"),
             "issues": existing_data.get("issues", []),
             "timestamp": existing_data.get("timestamp", ""),
+            "vt_box_time": existing_data.get("vt_box_time", ""),
             "distance": existing_data.get("distance", ""),
             "duration": existing_data.get("duration", "")
         }
@@ -160,6 +161,7 @@ def prompt_vehicle_data(vin, existing_data=None):
             "status": "healthy",
             "issues": [],
             "timestamp": "",
+            "vt_box_time": "",
             "distance": "",
             "duration": ""
         }
@@ -181,6 +183,7 @@ def prompt_vehicle_data(vin, existing_data=None):
                 "status": "healthy",
                 "issues": [],
                 "timestamp": "",
+                "vt_box_time": "",
                 "distance": "",
                 "duration": ""
             }
@@ -193,6 +196,7 @@ def prompt_vehicle_data(vin, existing_data=None):
                 "status": "healthy",
                 "issues": [],
                 "timestamp": "",
+                "vt_box_time": "",
                 "distance": "",
                 "duration": ""
             }
@@ -222,16 +226,18 @@ def prompt_vehicle_data(vin, existing_data=None):
     print("   [1] Healthy")
     print("   [2] Issues Detected")
     print("   [3] Not Active")
-    status_input = input("   Enter status choice (1, 2, or 3, or Enter to keep current): ").strip()
+    print("   [4] MDM Issue")
+    status_input = input("   Enter status choice (1, 2, 3, or 4, or Enter to keep current): ").strip()
     if not status_input:
         status = defaults['status']
     else:
-        while status_input not in ['1', '2', '3']:
-            status_input = input("   Please enter 1, 2, or 3: ").strip()
-        status = "healthy" if status_input == '1' else ("unhealthy" if status_input == '2' else "inactive")
+        while status_input not in ['1', '2', '3', '4']:
+            status_input = input("   Please enter 1, 2, 3, or 4: ").strip()
+        status = "healthy" if status_input == '1' else ("unhealthy" if status_input == '2' else ("inactive" if status_input == '3' else "mdm_issue"))
 
     issues = []
     timestamp = ""
+    vt_box_time = ""
     distance = ""
     duration = ""
 
@@ -309,6 +315,33 @@ def prompt_vehicle_data(vin, existing_data=None):
         if not timestamp:
             timestamp = defaults['timestamp'] if defaults['timestamp'] else "Not Available"
 
+    elif status == 'mdm_issue':
+        # Prompt for VT_BOX Online Time
+        time_prompt = "Enter VT_BOX Online Time"
+        if defaults['vt_box_time']:
+            time_prompt += f" (default: '{defaults['vt_box_time']}')"
+        time_prompt += ": "
+        vt_box_time = input(time_prompt).strip()
+        if not vt_box_time:
+            vt_box_time = defaults['vt_box_time'] if defaults['vt_box_time'] else "Not Available"
+
+        # Prompt for Distance/Duration (optional/editable, defaults empty or prev)
+        dist_prompt = "Enter Distance Travelled in km"
+        if defaults['distance']:
+            dist_prompt += f" (default: '{defaults['distance']}')"
+        dist_prompt += ": "
+        distance = input(dist_prompt).strip()
+        if not distance: distance = defaults['distance']
+        if not distance: distance = "Nil"
+
+        dur_prompt = "Enter Data Logged Duration"
+        if defaults['duration']:
+            dur_prompt += f" (default: '{defaults['duration']}')"
+        dur_prompt += ": "
+        duration = input(dur_prompt).strip()
+        if not duration: duration = defaults['duration']
+        if not duration: duration = "Nil"
+
     temp_data = {
         "vin": vin,
         "nickname": nickname,
@@ -318,6 +351,7 @@ def prompt_vehicle_data(vin, existing_data=None):
         "is_healthy": (status == 'healthy'),
         "issues": issues,
         "timestamp": timestamp,
+        "vt_box_time": vt_box_time,
         "distance": distance,
         "duration": duration
     }
@@ -437,8 +471,10 @@ def generate_html_report(vehicles, global_duration):
                 status_badge = '<span style="display: inline-block; padding: 4px 8px; font-size: 11px; font-weight: bold; border-radius: 12px; background-color: #dcfce7; color: #16a34a; text-transform: uppercase;">✓ Healthy</span>'
             elif status == 'unhealthy':
                 status_badge = f'<span style="display: inline-block; padding: 4px 8px; font-size: 11px; font-weight: bold; border-radius: 12px; background-color: #fee2e2; color: #dc2626; text-transform: uppercase;">✗ {len(val.get("issues", []))} Issues</span>'
-            else:
-                status_badge = '<span style="display: inline-block; padding: 4px 8px; font-size: 11px; font-weight: bold; border-radius: 12px; background-color: #f1f3f5; color: #475569; text-transform: uppercase;">⊘ Not Active</span>'
+            elif status == 'inactive':
+                status_badge = '<span style="display: inline-block; padding: 4px 8px; font-size: 11px; font-weight: bold; border-radius: 12px; background-color: #f1f3f5; color: #475569; text-transform: uppercase;">⊘ Inactive</span>'
+            elif status == 'mdm_issue':
+                status_badge = '<span style="display: inline-block; padding: 4px 8px; font-size: 11px; font-weight: bold; border-radius: 12px; background-color: #ffedd5; color: #ea580c; text-transform: uppercase;">⚠ MDM Issue</span>'
 
             mode_badge = f'<span style="display: inline-block; padding: 4px 8px; font-size: 11px; font-weight: bold; border-radius: 12px; background-color: #dbeafe; color: #1d4ed8; text-transform: uppercase;">{val["mode"]}</span>'
             
@@ -484,6 +520,9 @@ def generate_html_report(vehicles, global_duration):
             elif status == 'inactive':
                 card_border_color = "#64748b"
                 status_header = '<span style="color: #64748b; font-weight: bold;">NOT ACTIVE</span>'
+            elif status == 'mdm_issue':
+                card_border_color = "#ea580c"
+                status_header = '<span style="color: #ea580c; font-weight: bold;">MDM ISSUE</span>'
 
             # Anomaly content
             if status == 'healthy':
@@ -497,6 +536,13 @@ def generate_html_report(vehicles, global_duration):
                 anomalies_section = f"""
                     <div style="background-color: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px; color: #475569; font-size: 13px; font-weight: 500;">
                       ⊘ Vehicle is currently Not Active / Not Available. Last active timestamp: <strong>{timestamp_str}</strong>
+                    </div>
+                """
+            elif status == 'mdm_issue':
+                vt_box_time = val.get("vt_box_time") or "Not Available"
+                anomalies_section = f"""
+                    <div style="background-color: #fff7ed; border: 1px solid #ffedd5; border-radius: 6px; padding: 12px; color: #c2410c; font-size: 13px; font-weight: 500;">
+                      ⚠ MDM Issue: Monitoring flag is True, but no data came. VT_BOX came online at: <strong>{vt_box_time}</strong>
                     </div>
                 """
             else:
@@ -530,6 +576,21 @@ def generate_html_report(vehicles, global_duration):
 
             dist_val = f"{val['distance']} km" if status != 'inactive' else "Nil"
             dur_val = val['duration'] if status != 'inactive' else "Nil"
+            
+            extra_kpi_row = ""
+            if status == 'mdm_issue':
+                extra_kpi_row = f"""
+                <table width="100%" border="0" cellpadding="0" cellspacing="0" style="margin-bottom: 16px;">
+                  <tr>
+                    <td>
+                      <div style="background-color: #fff7ed; border: 1px solid #ffedd5; border-radius: 6px; padding: 10px;">
+                        <span style="font-size: 10px; color: #ea580c; text-transform: uppercase; font-weight: bold; display: block; margin-bottom: 2px;">VT_BOX Online Time</span>
+                        <span style="font-size: 13px; font-weight: 700; color: #c2410c;">{val.get('vt_box_time', 'Not Available')}</span>
+                      </div>
+                    </td>
+                  </tr>
+                </table>
+                """
 
             html_out += f"""
         <!-- VEHICLE CARD: {vin} -->
@@ -572,11 +633,13 @@ def generate_html_report(vehicles, global_duration):
               <td width="25%" style="padding-left: 8px;">
                 <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 8px; text-align: center;">
                   <div style="font-size: 9px; color: #64748b; text-transform: uppercase; margin-bottom: 2px;">Total Issues Logged</div>
-                  <div style="font-size: 13px; font-weight: 700; color: { '#16a34a' if status == 'healthy' else ('#64748b' if status == 'inactive' else '#dc2626') };">{len(val.get('issues', []))}</div>
+                  <div style="font-size: 13px; font-weight: 700; color: { '#16a34a' if status == 'healthy' else ('#64748b' if status == 'inactive' else ('#ea580c' if status == 'mdm_issue' else '#dc2626')) };">{len(val.get('issues', []))}</div>
                 </div>
               </td>
             </tr>
           </table>
+
+          {extra_kpi_row}
 
           <div style="font-size: 12px; font-weight: 600; color: #475569; margin-bottom: 8px; text-transform: uppercase;">⚠️ System Diagnostics & Activity Status</div>
           {anomalies_section}
@@ -605,7 +668,7 @@ def generate_html_report(vehicles, global_duration):
   <!-- PERSISTENT STATE DATA -->
   <script type="application/json" id="vehicles-json-state">
   {state_json_str}
-  </script>
+  <\/script>
 
 </body>
 </html>

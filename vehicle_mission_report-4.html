@@ -20,6 +20,8 @@
       --red-light: #fee2e2;
       --grey: #475569;
       --grey-light: #f1f3f5;
+      --orange: #ea580c;
+      --orange-light: #ffedd5;
       --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
       --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
       --radius: 8px;
@@ -259,7 +261,12 @@
       color: #ffffff;
     }
 
-    #issues-container, #inactive-container {
+    .health-toggle-btn.active-mdm {
+      background-color: var(--orange);
+      color: #ffffff;
+    }
+
+    #issues-container, #inactive-container, #mdm-container {
       background-color: var(--bg);
       border: 1px solid var(--border);
       border-radius: 6px;
@@ -415,6 +422,7 @@
     .badge-red { background-color: var(--red-light); color: var(--red); }
     .badge-blue { background-color: #dbeafe; color: #1d4ed8; }
     .badge-grey { background-color: var(--grey-light); color: var(--grey); }
+    .badge-orange { background-color: var(--orange-light); color: var(--orange); }
   </style>
 </head>
 <body>
@@ -486,8 +494,9 @@
           <label>Health / Activity Status</label>
           <div class="health-toggle-group">
             <div id="health-healthy" class="health-toggle-btn active-healthy" onclick="setStatus('healthy')">✓ Healthy</div>
-            <div id="health-unhealthy" class="health-toggle-btn" onclick="setStatus('unhealthy')">✗ Issues Detected</div>
-            <div id="health-inactive" class="health-toggle-btn" onclick="setStatus('inactive')">⊘ Not Active</div>
+            <div id="health-unhealthy" class="health-toggle-btn" onclick="setStatus('unhealthy')">✗ Issues</div>
+            <div id="health-inactive" class="health-toggle-btn" onclick="setStatus('inactive')">⊘ Inactive</div>
+            <div id="health-mdm" class="health-toggle-btn" onclick="setStatus('mdm_issue')">⚠ MDM Issue</div>
           </div>
         </div>
 
@@ -505,6 +514,12 @@
         <div id="inactive-container" style="display: none;">
           <label for="timestamp-input">Last Active Timestamp</label>
           <input type="text" id="timestamp-input" placeholder="e.g. 2026-07-08 11:20 (or leave blank for Not Available)">
+        </div>
+
+        <!-- MDM ISSUE SECTION -->
+        <div id="mdm-container" style="display: none;">
+          <label for="vt-box-time-input">VT_BOX Online Time</label>
+          <input type="text" id="vt-box-time-input" placeholder="e.g. 2026-07-08 10:30 (or leave blank for Not Available)">
         </div>
 
         <div class="form-row" style="margin-top: 16px;">
@@ -632,7 +647,7 @@
     let activeFleet = {};
     let activeIssues = [];
     let currentMode = 'Autonomous';
-    let currentStatus = 'healthy'; // 'healthy', 'unhealthy', 'inactive'
+    let currentStatus = 'healthy'; // 'healthy', 'unhealthy', 'inactive', 'mdm_issue'
 
     // POPULATE PREDEFINED SEARCH LIST
     window.onload = function() {
@@ -681,6 +696,7 @@
       filterSearchDropdown();
     }
 
+    // Input handlers
     function onSearchInput() {
       filterSearchDropdown();
     }
@@ -742,10 +758,12 @@
       document.getElementById('health-healthy').className = 'health-toggle-btn';
       document.getElementById('health-unhealthy').className = 'health-toggle-btn';
       document.getElementById('health-inactive').className = 'health-toggle-btn';
+      document.getElementById('health-mdm').className = 'health-toggle-btn';
 
       // Hide conditional containers
       document.getElementById('issues-container').style.display = 'none';
       document.getElementById('inactive-container').style.display = 'none';
+      document.getElementById('mdm-container').style.display = 'none';
 
       const distanceInput = document.getElementById('distance-input');
       const durationInput = document.getElementById('duration-input');
@@ -772,6 +790,13 @@
         durationInput.value = 'Nil';
         distanceInput.disabled = true;
         durationInput.disabled = true;
+      } else if (status === 'mdm_issue') {
+        document.getElementById('health-mdm').className = 'health-toggle-btn active-mdm';
+        document.getElementById('mdm-container').style.display = 'block';
+        distanceInput.disabled = false;
+        durationInput.disabled = false;
+        if (distanceInput.value === 'Nil') distanceInput.value = '';
+        if (durationInput.value === 'Nil') durationInput.value = '';
       }
     }
 
@@ -820,6 +845,7 @@
       durationInput.disabled = false;
       
       document.getElementById('timestamp-input').value = '';
+      document.getElementById('vt-box-time-input').value = '';
       setMode('Autonomous');
       setStatus('healthy');
       activeIssues = [];
@@ -834,6 +860,7 @@
       const distance = document.getElementById('distance-input').value.trim();
       const duration = document.getElementById('duration-input').value.trim();
       let timestamp = document.getElementById('timestamp-input').value.trim();
+      let vtBoxTime = document.getElementById('vt-box-time-input').value.trim();
 
       if (!vin) {
         alert("VIN is required.");
@@ -864,6 +891,10 @@
         timestamp = "Not Available";
       }
 
+      if (currentStatus === 'mdm_issue' && !vtBoxTime) {
+        vtBoxTime = "Not Available";
+      }
+
       // Add to fleet list
       activeFleet[vin] = {
         vin: vin,
@@ -873,6 +904,7 @@
         status: currentStatus,
         issues: (currentStatus === 'unhealthy') ? [...activeIssues] : [],
         timestamp: (currentStatus === 'inactive') ? timestamp : '',
+        vt_box_time: (currentStatus === 'mdm_issue') ? vtBoxTime : '',
         distance: (currentStatus === 'inactive') ? 'Nil' : distance,
         duration: (currentStatus === 'inactive') ? 'Nil' : duration
       };
@@ -911,6 +943,8 @@
         if (vehicle.status === 'unhealthy') {
           activeIssues = [...vehicle.issues];
           renderIssuesList();
+        } else if (vehicle.status === 'mdm_issue') {
+          document.getElementById('vt-box-time-input').value = vehicle.vt_box_time || '';
         }
       }
       
@@ -970,6 +1004,8 @@
           healthBadge = `<span class="badge badge-red">${vehicle.issues.length} Issues</span>`;
         } else if (vehicle.status === 'inactive') {
           healthBadge = `<span class="badge badge-grey">Not Active</span>`;
+        } else if (vehicle.status === 'mdm_issue') {
+          healthBadge = `<span class="badge badge-orange">MDM Issue</span>`;
         }
 
         const modeBadge = `<span class="badge badge-blue">${vehicle.mode}</span>`;
@@ -1037,10 +1073,13 @@
         let statusHeader = '<span style="color: #16a34a; font-weight: bold;">HEALTHY</span>';
         if (val.status === 'unhealthy') {
           cardBorder = '#ef4444';
-          statusHeader = '<span style="color: #dc2626; font-weight: bold;">ISSUE DETECTED</span>';
+          statusHeader = '<span style="color: #ef4444; font-weight: bold;">ISSUE DETECTED</span>';
         } else if (val.status === 'inactive') {
           cardBorder = '#64748b';
           statusHeader = '<span style="color: #64748b; font-weight: bold;">NOT ACTIVE</span>';
+        } else if (val.status === 'mdm_issue') {
+          cardBorder = '#ea580c';
+          statusHeader = '<span style="color: #ea580c; font-weight: bold;">MDM ISSUE</span>';
         }
 
         let anomaliesHTML = '';
@@ -1053,6 +1092,11 @@
           anomaliesHTML = `
             <div style="background-color: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px; color: #475569; font-size: 13px; font-weight: 500;">
               ⊘ Vehicle is currently Not Active / Not Available. Last active timestamp: <strong>${val.timestamp || 'Not Available'}</strong>
+            </div>`;
+        } else if (val.status === 'mdm_issue') {
+          anomaliesHTML = `
+            <div style="background-color: #fff7ed; border: 1px solid #ffedd5; border-radius: 6px; padding: 12px; color: #c2410c; font-size: 13px; font-weight: 500;">
+              ⚠ MDM Issue: Monitoring flag is True, but no data came. VT_BOX came online at: <strong>${val.vt_box_time || 'Not Available'}</strong>
             </div>`;
         } else {
           let rows = '';
@@ -1085,6 +1129,18 @@
 
         const distVal = val.status === 'inactive' ? 'Nil' : `${val.distance} km`;
         const durVal = val.status === 'inactive' ? 'Nil' : val.duration;
+        const extraKPIRow = val.status === 'mdm_issue' ? `
+          <table width="100%" border="0" cellpadding="0" cellspacing="0" style="margin-bottom: 16px;">
+            <tr>
+              <td>
+                <div style="background-color: #fff7ed; border: 1px solid #ffedd5; border-radius: 6px; padding: 10px;">
+                  <span style="font-size: 10px; color: #ea580c; text-transform: uppercase; font-weight: bold; display: block; margin-bottom: 2px;">VT_BOX Online Time</span>
+                  <span style="font-size: 13px; font-weight: 700; color: #c2410c;">${val.vt_box_time || 'Not Available'}</span>
+                </div>
+              </td>
+            </tr>
+          </table>
+        ` : '';
 
         detailCards += `
         <!-- VEHICLE CARD: ${vin} -->
@@ -1124,11 +1180,13 @@
               <td width="25%" style="padding-left: 8px;">
                 <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 8px; text-align: center;">
                   <div style="font-size: 9px; color: #64748b; text-transform: uppercase; margin-bottom: 2px;">Total Issues Logged</div>
-                  <div style="font-size: 13px; font-weight: 700; color: ${val.status === 'healthy' ? '#16a34a' : (val.status === 'inactive' ? '#64748b' : '#dc2626')};">${val.issues ? val.issues.length : 0}</div>
+                  <div style="font-size: 13px; font-weight: 700; color: ${val.status === 'healthy' ? '#16a34a' : (val.status === 'inactive' ? '#64748b' : (val.status === 'mdm_issue' ? '#ea580c' : '#dc2626'))};">${val.issues ? val.issues.length : 0}</div>
                 </div>
               </td>
             </tr>
           </table>
+
+          ${extraKPIRow}
 
           <div style="font-size: 12px; font-weight: 600; color: #475569; margin-bottom: 8px; text-transform: uppercase;">⚠️ System Diagnostics & Activity Status</div>
           ${anomaliesHTML}
@@ -1146,7 +1204,9 @@
         } else if (status === 'unhealthy') {
           return `<span style="display: inline-block; padding: 4px 8px; font-size: 11px; font-weight: bold; border-radius: 12px; background-color: #fee2e2; color: #dc2626; text-transform: uppercase;">✗ ${count} Issues</span>`;
         } else if (status === 'inactive') {
-          return '<span style="display: inline-block; padding: 4px 8px; font-size: 11px; font-weight: bold; border-radius: 12px; background-color: #f1f3f5; color: #475569; text-transform: uppercase;">⊘ Not Active</span>';
+          return '<span style="display: inline-block; padding: 4px 8px; font-size: 11px; font-weight: bold; border-radius: 12px; background-color: #f1f3f5; color: #475569; text-transform: uppercase;">⊘ Inactive</span>';
+        } else if (status === 'mdm_issue') {
+          return '<span style="display: inline-block; padding: 4px 8px; font-size: 11px; font-weight: bold; border-radius: 12px; background-color: #ffedd5; color: #ea580c; text-transform: uppercase;">⚠ MDM Issue</span>';
         }
       }
 
@@ -1247,7 +1307,7 @@
   </table>
 
   <!-- PERSISTENT STATE DATA -->
-  <script type="application/json" id="vehicles-json-data">
+  <script type="application/json" id="vehicles-json-state">
   {"global_duration": "", "vehicles": {}}
   <\/script>
 
