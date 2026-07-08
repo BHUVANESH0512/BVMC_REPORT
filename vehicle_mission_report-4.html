@@ -793,10 +793,10 @@
       } else if (status === 'mdm_issue') {
         document.getElementById('health-mdm').className = 'health-toggle-btn active-mdm';
         document.getElementById('mdm-container').style.display = 'block';
-        distanceInput.disabled = false;
-        durationInput.value = 'Nil';
-        durationInput.disabled = true;
-        if (distanceInput.value === 'Nil') distanceInput.value = '';
+        distanceInput.value = 'Nil';
+        distanceInput.disabled = true;
+        durationInput.disabled = false;
+        if (durationInput.value === 'Nil') durationInput.value = '';
       }
     }
 
@@ -936,10 +936,10 @@
         durationInput.disabled = true;
       } else if (vehicle.status === 'mdm_issue') {
         document.getElementById('vt-box-time-input').value = vehicle.vt_box_time || '';
-        distanceInput.value = vehicle.distance;
-        durationInput.value = 'Nil';
-        distanceInput.disabled = false;
-        durationInput.disabled = true;
+        distanceInput.value = 'Nil';
+        durationInput.value = vehicle.duration;
+        distanceInput.disabled = true;
+        durationInput.disabled = false;
       } else {
         distanceInput.value = vehicle.distance;
         durationInput.value = vehicle.duration;

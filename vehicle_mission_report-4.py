@@ -325,18 +325,18 @@ def prompt_vehicle_data(vin, existing_data=None):
         if not vt_box_time:
             vt_box_time = defaults['vt_box_time'] if defaults['vt_box_time'] else "Not Available"
 
-        # Prompt for Distance (KM) (required, "take the KM")
-        dist_prompt = "Enter Distance Travelled in km"
-        if defaults['distance'] and defaults['distance'] != 'Nil':
-            dist_prompt += f" (default: '{defaults['distance']}')"
-        dist_prompt += ": "
-        distance = input(dist_prompt).strip()
-        if not distance: distance = defaults['distance']
-        while not distance or distance == 'Nil':
-            distance = input("   Distance is required. Enter Distance: ").strip()
+        # Distance is automatically Nil
+        distance = "Nil"
 
-        # Duration is automatically Nil
-        duration = "Nil"
+        # Prompt for Duration (required)
+        dur_prompt = "Enter Data Logged Duration"
+        if defaults['duration'] and defaults['duration'] != 'Nil':
+            dur_prompt += f" (default: '{defaults['duration']}')"
+        dur_prompt += ": "
+        duration = input(dur_prompt).strip()
+        if not duration: duration = defaults['duration']
+        while not duration or duration == 'Nil':
+            duration = input("   Duration is required. Enter Duration: ").strip()
 
     temp_data = {
         "vin": vin,
