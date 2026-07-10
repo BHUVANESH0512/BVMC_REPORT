@@ -377,6 +377,22 @@
       font-size: 12px;
     }
 
+    .right-column {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .right-column .panel {
+      margin-bottom: 0;
+    }
+
+    .fleet-scroll-container {
+      max-height: 340px;
+      overflow-y: auto;
+      overflow-x: hidden;
+    }
+
     .empty-state {
       text-align: center;
       padding: 48px 24px;
@@ -461,7 +477,7 @@
 
         <div class="form-group search-container">
           <label for="search-input">Select or Search Predefined Vehicle</label>
-          <input type="text" id="search-input" placeholder="Click or type to search by Nickname or VIN..." onfocus="onSearchFocus()" oninput="onSearchInput()" autocomplete="off">
+          <input type="text" id="search-input" placeholder="Click or type to search by Nickname or VIN..." onfocus="onSearchFocus()" onclick="onSearchFocus()" oninput="onSearchInput()" autocomplete="off">
           <div id="search-dropdown" class="dropdown-menu"></div>
         </div>
 
@@ -533,6 +549,15 @@
           </div>
         </div>
 
+        <!-- VERSION DETAILS SECTION -->
+        <div class="form-group" style="margin-top: 16px;">
+          <label>Version Details (Optional)</label>
+          <div id="versions-container" style="display: flex; flex-direction: column; gap: 8px;">
+            <!-- Dynamic key-value version fields -->
+          </div>
+          <button class="btn-primary" onclick="addVersionRow('', '')" style="margin-top: 8px; padding: 6px 12px; font-size: 12px; background-color: #475569;">+ Add Version Field</button>
+        </div>
+
         <div class="btn-group">
           <button class="btn-primary" onclick="addVehicle()" style="flex: 2;">Add / Update Vehicle</button>
         </div>
@@ -540,26 +565,41 @@
     </div>
 
     <!-- RIGHT PANEL: CURRENT VEHICLES LIST -->
-    <div class="panel">
-      <div class="panel-title">
-        <span>Customer Vehicles List (<span id="fleet-count">0</span> Vehicles)</span>
-        <button class="btn-danger" id="clear-fleet-btn" onclick="clearFleet()" style="padding: 4px 10px; font-size: 11px; display: none;">Clear All</button>
+    <div class="right-column">
+      <div class="panel" style="flex-shrink: 0;">
+        <div class="panel-title">
+          <span>Customer Vehicles List (<span id="fleet-count">0</span> Vehicles)</span>
+          <button class="btn-danger" id="clear-fleet-btn" onclick="clearFleet()" style="padding: 4px 10px; font-size: 11px; display: none;">Clear All</button>
+        </div>
+
+        <div class="fleet-scroll-container">
+          <div id="fleet-items-container">
+            <div class="empty-state">
+              <div>🏢</div>
+              <h4>No Vehicles Added Yet</h4>
+              <p>Fill out the data entry form and click "Add / Update Vehicle" to populate your customer vehicles list.</p>
+            </div>
+          </div>
+        </div>
       </div>
 
-      <div id="fleet-items-container">
-        <div class="empty-state">
-          <div>🏢</div>
-          <h4>No Vehicles Added Yet</h4>
-          <p>Fill out the data entry form and click "Add / Update Vehicle" to populate your customer vehicles list.</p>
+      <!-- DOWNLOAD BAR -->
+      <div class="download-container" style="max-width: 100%; padding: 0; text-align: center; flex-shrink: 0;">
+        <button class="download-btn" onclick="downloadReport()" style="width: 100%;">Download Email-Safe HTML Report</button>
+      </div>
+
+      <!-- LIVE PREVIEW CONTAINER -->
+      <div class="panel" style="flex-shrink: 0; margin-bottom: 0;">
+        <div class="panel-title">
+          <span>Live Email Report Preview</span>
         </div>
+        <div style="font-size: 12px; color: #64748b; margin-bottom: 8px;">
+          Real-time preview of compiled email HTML report.
+        </div>
+        <iframe id="report-preview-iframe" style="width: 100%; height: 450px; border: 1px solid var(--border); border-radius: var(--radius); background-color: #f8fafc; overflow: auto; display: block; box-sizing: border-box;"></iframe>
       </div>
     </div>
 
-  </div>
-
-  <!-- DOWNLOAD BAR -->
-  <div class="download-container">
-    <button class="download-btn" onclick="downloadReport()">Download Email-Safe HTML Report</button>
   </div>
 
   <script>
@@ -653,6 +693,11 @@
     window.onload = function() {
       populateSearchDropdown();
 
+      // Initialize dynamic version fields
+      document.getElementById('versions-container').innerHTML = '';
+      addVersionRow('VT_BOX Version', '');
+      addVersionRow('VCU Firmware Version', '');
+
       const scriptTag = document.getElementById('vehicles-json-state');
       if (scriptTag && scriptTag.textContent.trim()) {
         try {
@@ -721,14 +766,24 @@
     }
 
     function selectVehicle(vin, nickname) {
-      document.getElementById('search-input').value = `${nickname} (${vin})`;
       document.getElementById('search-dropdown').style.display = 'none';
       
-      const data = PREDEFINED_VEHICLES[vin];
+      const existing = activeFleet[vin];
+      if (existing) {
+        editVehicle(vin);
+        document.getElementById('search-input').value = `${existing.nickname} (${vin})`;
+        return;
+      }
+      
+      // If it is a new predefined vehicle, clear previous forms to avoid data bleeding
+      clearForm();
+      
+      const data = PREDEFINED_VEHICLES[vin] || {};
+      document.getElementById('search-input').value = `${nickname || data.nickname || ''} (${vin})`;
       document.getElementById('vin-input').value = vin;
-      document.getElementById('nickname-input').value = nickname;
-      document.getElementById('location-input').value = data.location;
-      setMode(data.mode);
+      document.getElementById('nickname-input').value = nickname || data.nickname || '';
+      document.getElementById('location-input').value = data.location || 'Not Available';
+      setMode(data.mode || 'Autonomous');
     }
 
     // Hide dropdown when clicking outside
@@ -830,6 +885,23 @@
       });
     }
 
+    // DYNAMIC VERSION FIELDS MANAGEMENT
+    function addVersionRow(key = '', val = '') {
+      const container = document.getElementById('versions-container');
+      const row = document.createElement('div');
+      row.className = 'version-row';
+      row.style.display = 'flex';
+      row.style.gap = '8px';
+      row.style.alignItems = 'center';
+      row.style.marginTop = '8px';
+      row.innerHTML = `
+        <input type="text" placeholder="Field Name (e.g. VT_BOX Version)" class="version-key" style="flex: 1;" value="${key}">
+        <input type="text" placeholder="Value (e.g. 1.2.2)" class="version-value" style="flex: 1;" value="${val}">
+        <button class="btn-danger" onclick="this.parentElement.remove()" style="padding: 10px; width: 36px; height: 36px; line-height: 1; min-width: unset; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; font-weight: bold; border-radius: 6px; background-color: #ef4444; color: #ffffff;">×</button>
+      `;
+      container.appendChild(row);
+    }
+
     // FORM RESET
     function clearForm() {
       document.getElementById('search-input').value = '';
@@ -850,6 +922,11 @@
       setStatus('healthy');
       activeIssues = [];
       renderIssuesList();
+
+      // Reset Version details section
+      document.getElementById('versions-container').innerHTML = '';
+      addVersionRow('VT_BOX Version', '');
+      addVersionRow('VCU Firmware Version', '');
     }
 
     // ADD/UPDATE VEHICLE TO ACTIVE FLEET
@@ -895,6 +972,17 @@
         vtBoxTime = "Not Available";
       }
 
+      // Collect version details
+      const versionRows = document.querySelectorAll('#versions-container .version-row');
+      const versions = {};
+      versionRows.forEach(row => {
+        const key = row.querySelector('.version-key').value.trim();
+        const val = row.querySelector('.version-value').value.trim();
+        if (key) {
+          versions[key] = val;
+        }
+      });
+
       // Add to fleet list
       activeFleet[vin] = {
         vin: vin,
@@ -906,7 +994,8 @@
         timestamp: (currentStatus === 'inactive') ? timestamp : '',
         vt_box_time: (currentStatus === 'mdm_issue') ? vtBoxTime : '',
         distance: (currentStatus === 'inactive') ? 'Nil' : distance,
-        duration: (currentStatus === 'inactive') ? 'Nil' : duration
+        duration: (currentStatus === 'inactive') ? 'Nil' : duration,
+        versions: versions
       };
 
       updateFleetListUI();
@@ -925,6 +1014,17 @@
       
       setMode(vehicle.mode);
       setStatus(vehicle.status || 'healthy');
+      
+      // Populate version details
+      document.getElementById('versions-container').innerHTML = '';
+      if (vehicle.versions && Object.keys(vehicle.versions).length > 0) {
+        Object.entries(vehicle.versions).forEach(([k, v]) => {
+          addVersionRow(k, v);
+        });
+      } else {
+        addVersionRow('VT_BOX Version', '');
+        addVersionRow('VCU Firmware Version', '');
+      }
       
       const distanceInput = document.getElementById('distance-input');
       const durationInput = document.getElementById('duration-input');
@@ -1016,6 +1116,7 @@
             <p>Fill out the data entry form and click "Add / Update Vehicle" to populate your customer vehicles list.</p>
           </div>
         `;
+        updateReportPreview();
         return;
       }
 
@@ -1057,10 +1158,12 @@
         `;
         container.appendChild(item);
       });
+      
+      updateReportPreview();
     }
 
     // DOWNLOAD REPORT FUNCTION
-    function downloadReport() {
+    function getCompiledReportHTML() {
       const vins = Object.keys(activeFleet);
       if (vins.length === 0) {
         alert("Please add at least one vehicle to the fleet before generating the report.");
@@ -1072,6 +1175,162 @@
       if (!globalDuration) {
         globalDuration = "Not Specified";
       }
+
+      function getShortNickname(nickname) {
+        let name = nickname.replace(/\s*Vehicle.*/i, '');
+        name = name.replace(/\s*\(.*?\)/g, '');
+        name = name.trim();
+        if (name === "US HC Fargo") return "USHC Fargo";
+        if (name === "US HC Yuba") return "USHC Yuba";
+        return name;
+      }
+
+      // Build Issue Summary Section
+      const old_software_vins = ["MD9GBUE27DC341048", "MD9GBUE29DC341066", "MD9GBUE27FC341022"];
+      const temp_anomaly_vins = ["MD9GBUE27DC341048", "MD9GBUE23DC341063", "MD9GBUE29DC341066", "MD9GBUE22DC341068", "MD9GBUE27DC341079", "MD9GBUE20DC341070", "MD9GBUE24DC341038"];
+      const vt_box_1171 = ["MD9GBUE29DC341066"];
+      const vt_box_1181 = ["MD9GBUE2XFC341001", "MD9GBUE23FC341003", "MD9GBUE29FC341006", "MD9GBUE24FC341009", "MD9GBUE22FC341011", "MD9GBUE26FC341013", "MD9GBUE28FC341014", "MD9GBUE23FC341017", "MD9GBUE23FC341020", "MD9GBUE29FC341023"];
+      const no_details_vins = ["MD9GBUE22DC341006", "MD9GBUE26DC341042"];
+
+      let mdm_list = [];
+      let inactive_list = [];
+      let old_software_list = [];
+      let temp_anomaly_list = [];
+      let bms_list = [];
+      let charging_list = [];
+      let ok_list = [];
+      let data_loss_list = [];
+      let vt_122_list = [];
+      let vt_1181_list = [];
+      let vt_1171_list = [];
+      let no_details_list = [];
+
+      vins.forEach(vin => {
+        const val = activeFleet[vin];
+        const nick = getShortNickname(val.nickname);
+        const issues = val.issues || [];
+        const issues_str = issues.join(", ");
+        
+        let link_color = "#dc2626";
+        if (val.status === 'healthy') link_color = "#16a34a";
+        else if (val.status === 'inactive') link_color = "#64748b";
+        else if (val.status === 'mdm_issue') link_color = "#ea580c";
+
+        const vehicle_link = `<strong><a href="#vin-${vin}" style="color: ${link_color}; text-decoration: none; font-weight: 600;">${nick}</a></strong>`;
+
+        if (val.status === 'mdm_issue') {
+          const desc = issues_str ? issues_str : `VT_BOX online: ${val.vt_box_time || 'Not Available'}`;
+          mdm_list.push(`${vehicle_link} (${vin}) — ${desc}.`);
+        } else if (val.status === 'inactive') {
+          inactive_list.push(`${vehicle_link} — Last updated ${val.timestamp || 'Not Available'}`);
+        } else if (val.status === 'unhealthy') {
+          if (issues.some(i => i.toLowerCase().includes("data loss"))) {
+            data_loss_list.push(`${vehicle_link} — ${issues_str}`);
+          } else {
+            if (issues.some(i => i.toLowerCase().includes("plug state 4") || i.toLowerCase().includes("charging"))) {
+              charging_list.push(`${vehicle_link} — ${issues_str}`);
+            } else {
+              bms_list.push(`${vehicle_link} — ${issues_str}`);
+            }
+          }
+        } else if (val.status === 'healthy') {
+          ok_list.push(`<a href="#vin-${vin}" style="color:#16a34a; font-weight:600; text-decoration:none;">${nick}</a>`);
+        }
+
+        if (old_software_vins.includes(vin)) old_software_list.push(nick);
+        if (temp_anomaly_vins.includes(vin)) temp_anomaly_list.push(nick);
+        
+        if (vt_box_1171.includes(vin)) vt_1171_list.push(nick);
+        else if (vt_box_1181.includes(vin)) vt_1181_list.push(nick);
+        else if (no_details_vins.includes(vin)) no_details_list.push(nick);
+        else vt_122_list.push(nick);
+      });
+
+      function format_js_row(title, color, text_list, count, is_bold=true, badge_bg=null, badge_color=null) {
+        if (!text_list || text_list.length === 0) {
+          if (title === "Charging Issues (Plug State 4)") {
+            return `
+            <tr style="border-bottom: 1px solid #f1f5f9;">
+              <td style="padding: 12px; border-bottom: 1px solid #f1f5f9; color: #475569; vertical-align: top;">Charging Issues (Plug State 4)</td>
+              <td style="padding: 12px; border-bottom: 1px solid #f1f5f9; color: #475569; vertical-align: top;">None reported</td>
+              <td style="padding: 12px; border-bottom: 1px solid #f1f5f9; text-align: right; vertical-align: top;"><span style="display: inline-block; padding: 4px 8px; font-size: 11px; font-weight: bold; border-radius: 12px; background-color: #f1f3f5; color: #475569;">0</span></td>
+            </tr>`;
+          }
+          return "";
+        }
+        let rendered_text = "";
+        if (["Old Software Version", "Motor Controller Temperature Anomaly (Negative Values)", "VT_BOX Version (1.2.2)", "VT_BOX Version (1.1.8.1)", "VT_BOX Version (1.1.7.1)"].includes(title)) {
+          rendered_text = text_list.join(", ");
+          if (title === "Old Software Version") {
+            rendered_text += ' <span style="color: #94a3b8;">(VCU 1.0.0 or earlier)</span>';
+          }
+        } else {
+          rendered_text = text_list.join(title === "✓ OK / No Issues" ? ", " : "<br/>");
+        }
+
+        let count_badge = "—";
+        if (count !== null) {
+          if (badge_bg && badge_color) {
+            count_badge = `<span style="display: inline-block; padding: 4px 8px; font-size: 11px; font-weight: bold; border-radius: 12px; background-color: ${badge_bg}; color: ${badge_color};">${count}</span>`;
+          } else {
+            count_badge = `<span style="display: inline-block; padding: 4px 8px; font-size: 11px; font-weight: bold; border-radius: 12px; background-color: #f1f3f5; color: #475569;">${count}</span>`;
+          }
+        }
+
+        const title_style = is_bold ? `color: ${color}; font-weight: 600; vertical-align: top;` : "color: #475569; vertical-align: top;";
+        return `
+        <tr style="border-bottom: 1px solid #f1f5f9;">
+          <td style="padding: 12px; border-bottom: 1px solid #f1f5f9; ${title_style}">${title}</td>
+          <td style="padding: 12px; border-bottom: 1px solid #f1f5f9; color: #475569; vertical-align: top;">${rendered_text}</td>
+          <td style="padding: 12px; border-bottom: 1px solid #f1f5f9; text-align: right; vertical-align: top;">${count_badge}</td>
+        </tr>`;
+      }
+
+      let issueSummaryRows = '';
+      issueSummaryRows += format_js_row("⚠ MDM ON but No Data Received", "#ea580c", mdm_list, mdm_list.length, true, "#ffedd5", "#ea580c");
+      issueSummaryRows += format_js_row("⊘ No Data Reported", "#64748b", inactive_list, inactive_list.length);
+      issueSummaryRows += format_js_row("Motor Controller Temperature Anomaly (Negative Values)", "#475569", temp_anomaly_list, temp_anomaly_list.length, false);
+      issueSummaryRows += format_js_row("✗ BMS / Motor Faults", "#dc2626", bms_list, bms_list.length, true, "#fee2e2", "#dc2626");
+      issueSummaryRows += format_js_row("Charging Issues (Plug State 4)", "#475569", charging_list, charging_list.length, false);
+      issueSummaryRows += format_js_row("✓ OK / No Issues", "#16a34a", ok_list, ok_list.length, true, "#dcfce7", "#16a34a");
+      issueSummaryRows += format_js_row("✗ Data Loss", "#dc2626", data_loss_list, data_loss_list.length, true, "#fee2e2", "#dc2626");
+
+      const issueSummaryHTML = `
+    <!-- ISSUE SUMMARY SECTION -->
+    <tr>
+      <td style="padding: 24px; border-top: 1px solid #e2e8f0;">
+        <table width="100%" border="0" cellpadding="0" cellspacing="0" style="border-bottom: 2px solid #f1f5f9; padding-bottom: 8px; margin-bottom: 16px;">
+          <tr>
+            <td style="vertical-align: middle;">
+              <h2 style="margin: 0; font-size: 18px; font-weight: 600; color: #0f172a;"> Issue Summary</h2>
+            </td>
+            <td style="text-align: right; font-size: 12px; color: #64748b; font-weight: 500; vertical-align: middle;">
+              <strong>Report Duration:</strong> ${globalDuration} (PDT)
+            </td>
+          </tr>
+        </table>
+        <p style="font-size: 13px; color: #64748b; margin-bottom: 16px;">
+          Category-level breakdown of vehicle issues compiled for the report duration.
+        </p>
+
+        <table width="100%" border="0" cellpadding="0" cellspacing="0" style="font-size: 13px; border: 1px solid #e2e8f0; border-radius: 6px; overflow: hidden;">
+          <thead>
+            <tr bgcolor="#f8fafc">
+              <th style="padding: 10px 12px; font-weight: 600; text-align: left; border-bottom: 2px solid #e2e8f0; color: #475569; width: 220px;">Issue Category</th>
+              <th style="padding: 10px 12px; font-weight: 600; text-align: left; border-bottom: 2px solid #e2e8f0; color: #475569;">Affected Vehicles</th>
+              <th style="padding: 10px 12px; font-weight: 600; text-align: right; border-bottom: 2px solid #e2e8f0; color: #475569; width: 70px;">Count</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${issueSummaryRows}
+            <tr>
+              <td style="padding: 12px; color: #0f172a; font-weight: 700;" colspan="2">Total Vehicles</td>
+              <td style="padding: 12px; text-align: right; color: #0f172a; font-weight: 700;">${vins.length}</td>
+            </tr>
+          </tbody>
+        </table>
+      </td>
+    </tr>`;
 
       // 1. Build summary rows
       let summaryRows = '';
@@ -1099,6 +1358,22 @@
       vins.sort().forEach(vin => {
         const val = activeFleet[vin];
         
+        let versionsHTML = '';
+        if (val.versions && Object.keys(val.versions).length > 0) {
+          let cells = [];
+          Object.entries(val.versions).forEach(([k, v]) => {
+            if (v.trim()) {
+              cells.push(`<span style="color: #475569; font-weight: 600;">${k}:</span> <span style="color: #0f172a; margin-right: 15px;">${v}</span>`);
+            }
+          });
+          if (cells.length > 0) {
+            versionsHTML = `
+              <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px; margin-bottom: 8px; font-size: 10px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+                ${cells.join(' &nbsp;|&nbsp; ')}
+              </div>`;
+          }
+        }
+        
         let cardBorder = '#22c55e';
         let statusHeader = '<span style="color: #16a34a; font-weight: bold;">HEALTHY</span>';
         if (val.status === 'unhealthy') {
@@ -1115,17 +1390,17 @@
         let anomaliesHTML = '';
         if (val.status === 'healthy') {
           anomaliesHTML = `
-            <div style="background-color: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px; padding: 12px; color: #166534; font-size: 13px; font-weight: 500;">
+            <div style="background-color: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px; padding: 12px; color: #166534; font-size: 11px; font-weight: 500;">
               ✓ No system anomalies or safety faults detected.
             </div>`;
         } else if (val.status === 'inactive') {
           anomaliesHTML = `
-            <div style="background-color: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px; color: #475569; font-size: 13px; font-weight: 500;">
+            <div style="background-color: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px; color: #475569; font-size: 11px; font-weight: 500;">
               ⊘ Vehicle is currently Not Active / Not Available. Last active timestamp: <strong>${val.timestamp || 'Not Available'}</strong>
             </div>`;
         } else if (val.status === 'mdm_issue') {
           anomaliesHTML = `
-            <div style="background-color: #fff7ed; border: 1px solid #ffedd5; border-radius: 6px; padding: 12px; color: #c2410c; font-size: 13px; font-weight: 500;">
+            <div style="background-color: #fff7ed; border: 1px solid #ffedd5; border-radius: 6px; padding: 12px; color: #c2410c; font-size: 11px; font-weight: 500;">
               ⚠ MDM Issue: Monitoring flag is True, but no data came. VT_BOX came online at: <strong>${val.vt_box_time || 'Not Available'}</strong>
             </div>`;
         } else {
@@ -1136,12 +1411,12 @@
               <td style="padding: 8px 10px; border-bottom: 1px solid #e2e8f0; color: #0f172a; font-family: monospace; text-align: left;">${String(idx+1).padStart(3, '0')}</td>
               <td style="padding: 8px 10px; border-bottom: 1px solid #e2e8f0; color: #475569; font-weight: 600; text-align: left;">User Reported</td>
               <td style="padding: 8px 10px; border-bottom: 1px solid #e2e8f0; color: #0f172a; text-align: left;">${issue}</td>
-              <td style="padding: 8px 10px; border-bottom: 1px solid #e2e8f0; text-align: left;"><span style="display: inline-block; padding: 3px 8px; font-size: 11px; font-weight: bold; border-radius: 12px; background-color: #fee2e2; color: #dc2626; text-transform: uppercase;">Critical</span></td>
+              <td style="padding: 8px 10px; border-bottom: 1px solid #e2e8f0; text-align: left;"><span style="display: inline-block; padding: 3px 8px; font-size: 10px; font-weight: bold; border-radius: 12px; background-color: #fee2e2; color: #dc2626; text-transform: uppercase;">Critical</span></td>
               <td style="padding: 8px 10px; border-bottom: 1px solid #e2e8f0; color: #475569; text-align: left;">Inspect vehicle diagnostics</td>
             </tr>`;
           });
           anomaliesHTML = `
-            <table width="100%" border="0" cellpadding="0" cellspacing="0" style="font-size: 12px; border: 1px solid #e2e8f0; border-radius: 6px; overflow: hidden;">
+            <table width="100%" border="0" cellpadding="0" cellspacing="0" style="font-size: 11px; border: 1px solid #e2e8f0; border-radius: 6px; overflow: hidden;">
               <thead>
                 <tr bgcolor="#f8fafc">
                   <th style="padding: 8px 10px; font-weight: 600; text-align: left; border-bottom: 1px solid #e2e8f0; color: #475569; width: 45px;">ID</th>
@@ -1164,8 +1439,8 @@
             <tr>
               <td>
                 <div style="background-color: #fff7ed; border: 1px solid #ffedd5; border-radius: 6px; padding: 10px;">
-                  <span style="font-size: 10px; color: #ea580c; text-transform: uppercase; font-weight: bold; display: block; margin-bottom: 2px;">VT_BOX Online Time</span>
-                  <span style="font-size: 13px; font-weight: 700; color: #c2410c;">${val.vt_box_time || 'Not Available'}</span>
+                  <span style="font-size: 8px; color: #ea580c; text-transform: uppercase; font-weight: bold; display: block; margin-bottom: 2px;">VT_BOX Online Time</span>
+                  <span style="font-size: 11px; font-weight: 700; color: #c2410c;">${val.vt_box_time || 'Not Available'}</span>
                 </div>
               </td>
             </tr>
@@ -1174,12 +1449,14 @@
 
         detailCards += `
         <!-- VEHICLE CARD: ${vin} -->
-        <div id="vin-${vin}" style="background-color: #ffffff; border: 1px solid #e2e8f0; border-left: 5px solid ${cardBorder}; border-radius: 6px; padding: 20px; margin-bottom: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.02);">
-          <table width="100%" border="0" cellpadding="0" cellspacing="0" style="margin-bottom: 16px;">
+        <div id="vin-${vin}" style="background-color: #ffffff; border: 1px solid #e2e8f0; border-left: 4px solid ${cardBorder}; border-radius: 6px; padding: 12px; margin-bottom: 14px; box-shadow: 0 1px 4px rgba(0,0,0,.05);">
+          
+          <!-- Card Header -->
+          <table width="100%" border="0" cellpadding="0" cellspacing="0" style="margin-bottom: 8px;">
             <tr>
               <td>
-                <span style="font-size: 16px; font-weight: 700; color: #0f172a; font-family: Courier, monospace;">VIN: ${vin}</span>
-                <div style="font-size: 11px; color: #64748b; margin-top: 4px;">Nickname: <strong>${val.nickname}</strong> &nbsp;|&nbsp; Location: <strong>${val.location}</strong></div>
+                <span style="font-size: 14px; font-weight: 700; color: #0f172a; font-family: Courier, monospace;">VIN: ${vin}</span>
+                <div style="font-size: 9px; color: #64748b; margin-top: 2px; line-height: 1.3;">Nickname: <strong>${val.nickname}</strong> &nbsp;|&nbsp; Location: <strong>${val.location}</strong></div>
               </td>
               <td style="text-align: right; vertical-align: top;">
                 ${statusHeader}
@@ -1187,30 +1464,31 @@
             </tr>
           </table>
 
-          <table width="100%" border="0" cellpadding="0" cellspacing="0" style="margin-bottom: 16px;">
+          <!-- Overview KPI blocks -->
+          <table width="100%" border="0" cellpadding="0" cellspacing="0" style="margin-bottom: 8px;">
             <tr>
               <td width="25%" style="padding-right: 8px;">
-                <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 8px; text-align: center;">
-                  <div style="font-size: 9px; color: #64748b; text-transform: uppercase; margin-bottom: 2px;">Vehicle Mode</div>
-                  <div style="font-size: 13px; font-weight: 700; color: #1d4ed8;">${val.mode}</div>
+                <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 5px; text-align: center;">
+                  <div style="font-size: 6px; color: #64748b; text-transform: uppercase; margin-bottom: 2px;">Vehicle Mode</div>
+                  <div style="font-size: 6px; font-weight: 700; color: #1d4ed8;">${val.mode}</div>
                 </div>
               </td>
               <td width="25%" style="padding-left: 4px; padding-right: 4px;">
-                <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 8px; text-align: center;">
-                  <div style="font-size: 9px; color: #64748b; text-transform: uppercase; margin-bottom: 2px;">Distance Travelled</div>
-                  <div style="font-size: 13px; font-weight: 700; color: #0f172a;">${distVal}</div>
+                <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 5px; text-align: center;">
+                  <div style="font-size: 6px; color: #64748b; text-transform: uppercase; margin-bottom: 2px;">Distance Travelled</div>
+                  <div style="font-size: 11px; font-weight: 700; color: #0f172a;">${distVal}</div>
                 </div>
               </td>
               <td width="25%" style="padding-left: 4px; padding-right: 4px;">
-                <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 8px; text-align: center;">
-                  <div style="font-size: 9px; color: #64748b; text-transform: uppercase; margin-bottom: 2px;">Logged Duration</div>
-                  <div style="font-size: 13px; font-weight: 700; color: #0f172a;">${durVal}</div>
+                <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 5px; text-align: center;">
+                  <div style="font-size: 6px; color: #64748b; text-transform: uppercase; margin-bottom: 2px;">Logged Duration</div>
+                  <div style="font-size: 11px; font-weight: 700; color: #0f172a;">${durVal}</div>
                 </div>
               </td>
               <td width="25%" style="padding-left: 8px;">
-                <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 8px; text-align: center;">
-                  <div style="font-size: 9px; color: #64748b; text-transform: uppercase; margin-bottom: 2px;">Total Issues Logged</div>
-                  <div style="font-size: 13px; font-weight: 700; color: ${val.status === 'healthy' ? '#16a34a' : (val.status === 'inactive' ? '#64748b' : (val.status === 'mdm_issue' ? '#ea580c' : '#dc2626'))};">${val.issues ? val.issues.length : 0}</div>
+                <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 5px; text-align: center;">
+                  <div style="font-size: 5px; color: #64748b; text-transform: uppercase; margin-bottom: 2px;">Total Issues Logged</div>
+                  <div style="font-size: 11px; font-weight: 700; color: ${val.status === 'healthy' ? '#16a34a' : (val.status === 'inactive' ? '#64748b' : (val.status === 'mdm_issue' ? '#ea580c' : '#dc2626'))};">${val.issues ? val.issues.length : 0}</div>
                 </div>
               </td>
             </tr>
@@ -1218,11 +1496,13 @@
 
           ${extraKPIRow}
 
-          <div style="font-size: 12px; font-weight: 600; color: #475569; margin-bottom: 8px; text-transform: uppercase;">⚠️ System Diagnostics & Activity Status</div>
+          ${versionsHTML}
+
+          <div style="font-size: 11px; font-weight: 600; color: #475569; margin-bottom: 8px; text-transform: uppercase;">⚠️ System Diagnostics & Activity Status</div>
           ${anomaliesHTML}
 
           <div style="text-align: right; margin-top: 15px;">
-            <a href="#" style="font-size: 11px; color: #2563eb; text-decoration: none; font-weight: 600;">&uarr; Back to Customer Vehicles Overview</a>
+            <a href="#" style="font-size: 10px; color: #2563eb; text-decoration: none; font-weight: 600;">&uarr; Back to Customer Vehicles Overview</a>
           </div>
         </div>`;
       });
@@ -1280,6 +1560,8 @@
       </td>
     </tr>
 
+    ${issueSummaryHTML}
+
     <!-- SUMMARY SECTION -->
     <tr>
       <td style="padding: 24px;">
@@ -1318,8 +1600,8 @@
 
     <!-- VEHICLE DETAILS SECTION -->
     <tr>
-      <td style="padding: 24px; background-color: #fafbfc; border-top: 1px solid #e2e8f0;">
-        <h2 style="margin: 0 0 20px 0; font-size: 18px; font-weight: 600; color: #0f172a; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px;">
+      <td style="padding: 16px 20px; background-color: #fafbfc; border-top: 1px solid #e2e8f0;">
+        <h2 style="margin: 0 0 12px 0; font-size: 16px; font-weight: 600; color: #0f172a; border-bottom: 2px solid #e2e8f0; padding-bottom: 6px;">
           🔍 Detailed Vehicle Diagnostics
         </h2>
         ${detailCards}
@@ -1344,8 +1626,22 @@
 </body>
 </html>`;
 
-      // Trigger file download
-      const blob = new Blob([reportHTML], { type: 'text/html;charset=utf-8;' });
+      return reportHTML;
+    }
+
+    function downloadReport() {
+      const vins = Object.keys(activeFleet);
+      if (vins.length === 0) {
+        alert("Please add at least one vehicle to the fleet before generating the report.");
+        return;
+      }
+      const reportHTML = getCompiledReportHTML();
+      const compressedHTML = reportHTML.split('\n')
+        .map(line => line.trim())
+        .filter(line => line.length > 0)
+        .join('\n');
+
+      const blob = new Blob([compressedHTML], { type: 'text/html;charset=utf-8;' });
       const link = document.createElement("a");
       const url = URL.createObjectURL(blob);
       link.setAttribute("href", url);
@@ -1355,11 +1651,21 @@
       link.click();
       document.body.removeChild(link);
     }
+
+    function updateReportPreview() {
+      const iframe = document.getElementById('report-preview-iframe');
+      if (iframe) {
+        iframe.srcdoc = getCompiledReportHTML();
+      }
+    }
   </script>
 
   <!-- PERSISTENT STATE DATA (For loading if pre-saved) -->
   <script type="application/json" id="vehicles-json-state">
-  {"global_duration": "", "vehicles": {}}
+  {
+  "global_duration": "",
+  "vehicles": {}
+}
   </script>
 
 </body>

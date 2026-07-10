@@ -1,10 +1,2 @@
-# Only built-in standard Python libraries are used:
-# - http.server
-# - socketserver
-# - threading
-# - time
-# - json
-# - re
-# - webbrowser
-# - os
-# - sys
+# Database adapters
+psycopg2-binary==2.9.9
