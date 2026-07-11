@@ -942,6 +942,14 @@ class CustomHandler(http.server.SimpleHTTPRequestHandler):
         pass
 
     def do_GET(self):
+        # Health check endpoint for cron-job.org or monitoring services
+        if self.path == '/health':
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json')
+            self.end_headers()
+            self.wfile.write(json.dumps({"status": "healthy"}).encode('utf-8'))
+            return
+
         # Serve vehicle_mission_report-4.html as the root index page
         if self.path == '/':
             self.path = '/vehicle_mission_report-4.html'
@@ -1003,6 +1011,15 @@ def main():
         # Change cwd to script directory to serve correct files
         dir_path = os.path.dirname(os.path.abspath(__file__))
         os.chdir(dir_path)
+        
+        # Load state from database on startup to rebuild the HTML builder file
+        try:
+            startup_state = load_previous_vehicles()
+            if startup_state:
+                save_state_to_builder(startup_state.get("vehicles", {}), startup_state.get("global_duration", ""))
+                print("✅ Successfully restored last saved state from database on startup.")
+        except Exception as startup_err:
+            print(f"⚠️ Warning: Could not restore database state on startup ({startup_err})")
         
         with CustomTCPServer(("0.0.0.0", port), CustomHandler) as httpd:
             print(f"Server is running at http://0.0.0.0:{port}")
