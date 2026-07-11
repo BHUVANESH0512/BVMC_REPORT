@@ -668,9 +668,6 @@ def generate_html_report(vehicles, global_duration):
       <td style="padding: 24px;">
         <table width="100%" border="0" cellpadding="0" cellspacing="0" style="border-bottom: 2px solid #f1f5f9; padding-bottom: 8px; margin-bottom: 16px;">
           <tr>
-            <td style="vertical-align: middle;">
-              <h2 style="margin: 0; font-size: 18px; font-weight: 600; color: #0f172a;">🏢 Customer Vehicles Overview Summary</h2>
-            </td>
             <td style="text-align: right; font-size: 12px; color: #64748b; font-weight: 500; vertical-align: middle;">
               <strong>Report Duration:</strong> {global_duration}
             </td>
