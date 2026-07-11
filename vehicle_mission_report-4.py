@@ -86,16 +86,12 @@ PREDEFINED_VEHICLES = {
 
 def get_db_connection():
     db_url = os.environ.get("DATABASE_URL")
-    if db_url:
-        import psycopg2
-        if db_url.startswith("postgres://"):
-            db_url = db_url.replace("postgres://", "postgresql://", 1)
-        return psycopg2.connect(db_url)
-    else:
-        import sqlite3
-        dir_path = os.path.dirname(os.path.abspath(__file__))
-        db_path = os.path.join(dir_path, "fleet_state.db")
-        return sqlite3.connect(db_path)
+    if not db_url:
+        raise RuntimeError("DATABASE_URL environment variable is not set.")
+    import psycopg2
+    if db_url.startswith("postgres://"):
+        db_url = db_url.replace("postgres://", "postgresql://", 1)
+    return psycopg2.connect(db_url)
 
 def init_db():
     conn = get_db_connection()
@@ -118,15 +114,9 @@ def save_state_to_db(vehicles, global_duration):
     # Check if row 1 exists
     cursor.execute("SELECT id FROM fleet_state WHERE id = 1")
     if cursor.fetchone():
-        if os.environ.get("DATABASE_URL"):
-            cursor.execute("UPDATE fleet_state SET global_duration = %s, vehicles_json = %s WHERE id = 1", (global_duration, vehicles_json))
-        else:
-            cursor.execute("UPDATE fleet_state SET global_duration = ?, vehicles_json = ? WHERE id = 1", (global_duration, vehicles_json))
+        cursor.execute("UPDATE fleet_state SET global_duration = %s, vehicles_json = %s WHERE id = 1", (global_duration, vehicles_json))
     else:
-        if os.environ.get("DATABASE_URL"):
-            cursor.execute("INSERT INTO fleet_state (id, global_duration, vehicles_json) VALUES (1, %s, %s)", (global_duration, vehicles_json))
-        else:
-            cursor.execute("INSERT INTO fleet_state (id, global_duration, vehicles_json) VALUES (1, ?, ?)", (global_duration, vehicles_json))
+        cursor.execute("INSERT INTO fleet_state (id, global_duration, vehicles_json) VALUES (1, %s, %s)", (global_duration, vehicles_json))
             
     conn.commit()
     conn.close()
