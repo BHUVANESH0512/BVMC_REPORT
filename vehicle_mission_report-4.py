@@ -661,73 +661,8 @@ def generate_html_report(vehicles, global_duration):
         # Dynamic Issue Summary Section
         html_out += get_issue_summary_section(vehicles, global_duration)
 
-        # Summary Section
-        html_out += f"""
-    <!-- SUMMARY SECTION -->
-    <tr>
-      <td style="padding: 24px;">
-        <table width="100%" border="0" cellpadding="0" cellspacing="0" style="border-bottom: 2px solid #f1f5f9; padding-bottom: 8px; margin-bottom: 16px;">
-          <tr>
-            <td style="text-align: right; font-size: 12px; color: #64748b; font-weight: 500; vertical-align: middle;">
-              <strong>Report Duration:</strong> {global_duration}
-            </td>
-          </tr>
-        </table>
-        <p style="font-size: 13px; color: #64748b; margin-bottom: 16px;">
-          This report compiles vehicle capture data for customer vehicles. Click on any VIN below to jump directly to its detailed diagnostics and status log.
-        </p>
-
-        <table width="100%" border="0" cellpadding="0" cellspacing="0" style="font-size: 13px;">
-          <thead>
-            <tr bgcolor="#f8fafc">
-              <th style="padding: 10px 12px; font-weight: 600; text-align: left; border-bottom: 2px solid #e2e8f0; color: #475569;">Vehicle VIN</th>
-              <th style="padding: 10px 12px; font-weight: 600; text-align: left; border-bottom: 2px solid #e2e8f0; color: #475569;">Nickname</th>
-              <th style="padding: 10px 12px; font-weight: 600; text-align: left; border-bottom: 2px solid #e2e8f0; color: #475569;">Location</th>
-              <th style="padding: 10px 12px; font-weight: 600; text-align: left; border-bottom: 2px solid #e2e8f0; color: #475569;">Mode</th>
-              <th style="padding: 10px 12px; font-weight: 600; text-align: left; border-bottom: 2px solid #e2e8f0; color: #475569;">Status</th>
-              <th style="padding: 10px 12px; font-weight: 600; text-align: right; border-bottom: 2px solid #e2e8f0; color: #475569;">Distance</th>
-              <th style="padding: 10px 12px; font-weight: 600; text-align: right; border-bottom: 2px solid #e2e8f0; color: #475569;">Duration</th>
-            </tr>
-          </thead>
-          <tbody>
-"""
-        for vin in sorted(vehicles.keys()):
-            val = vehicles[vin]
-            status = val.get("status", "healthy")
-            
-            # Badge rendering
-            if status == 'healthy':
-                status_badge = '<span style="display: inline-block; padding: 4px 8px; font-size: 11px; font-weight: bold; border-radius: 12px; background-color: #dcfce7; color: #16a34a; text-transform: uppercase;">✓ Healthy</span>'
-            elif status == 'unhealthy':
-                status_badge = f'<span style="display: inline-block; padding: 4px 8px; font-size: 11px; font-weight: bold; border-radius: 12px; background-color: #fee2e2; color: #dc2626; text-transform: uppercase;">✗ {len(val.get("issues", []))} Issues</span>'
-            elif status == 'inactive':
-                status_badge = '<span style="display: inline-block; padding: 4px 8px; font-size: 11px; font-weight: bold; border-radius: 12px; background-color: #f1f3f5; color: #475569; text-transform: uppercase;">⊘ Inactive</span>'
-            elif status == 'mdm_issue':
-                status_badge = '<span style="display: inline-block; padding: 4px 8px; font-size: 11px; font-weight: bold; border-radius: 12px; background-color: #ffedd5; color: #ea580c; text-transform: uppercase;">⚠ MDM Issue</span>'
-
-            mode_badge = f'<span style="display: inline-block; padding: 4px 8px; font-size: 11px; font-weight: bold; border-radius: 12px; background-color: #dbeafe; color: #1d4ed8; text-transform: uppercase;">{val["mode"]}</span>'
-            
-            dist_str = f"{val['distance']} km" if status != 'inactive' else "Nil"
-            dur_str = val['duration'] if status != 'inactive' else "Nil"
-
-            html_out += f"""
-            <tr style="border-bottom: 1px solid #f1f5f9;">
-              <td style="padding: 12px; border-bottom: 1px solid #f1f5f9;"><a href="#vin-{vin}" style="color: #2563eb; font-weight: 600; text-decoration: none;">{vin}</a></td>
-              <td style="padding: 12px; border-bottom: 1px solid #f1f5f9; color: #475569;">{val['nickname']}</td>
-              <td style="padding: 12px; border-bottom: 1px solid #f1f5f9; color: #475569;">{val['location']}</td>
-              <td style="padding: 12px; border-bottom: 1px solid #f1f5f9;">{mode_badge}</td>
-              <td style="padding: 12px; border-bottom: 1px solid #f1f5f9;">{status_badge}</td>
-              <td style="padding: 12px; border-bottom: 1px solid #f1f5f9; text-align: right; font-weight: 600;">{dist_str}</td>
-              <td style="padding: 12px; border-bottom: 1px solid #f1f5f9; text-align: right; font-weight: 600;">{dur_str}</td>
-            </tr>
-            """
-
+        # VEHICLE DETAILS SECTION
         html_out += """
-          </tbody>
-        </table>
-      </td>
-    </tr>
-
     <!-- VEHICLE DETAILS SECTION -->
     <tr>
       <td style="padding: 16px 20px; background-color: #fafbfc; border-top: 1px solid #e2e8f0;">
