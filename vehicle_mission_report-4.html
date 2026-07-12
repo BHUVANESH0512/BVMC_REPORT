@@ -443,13 +443,16 @@
 </head>
 <body>
 
-  <header>
+  <header style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
     <div>
       <h1>Boson Motor</h1>
       <p>Customer Vehicles Mission Report Builder</p>
+      <div id="db-status-container" style="margin-top: 5px;">
+        <span id="db-status-badge" style="font-size: 11px; padding: 4px 8px; border-radius: 4px; font-weight: 600; display: inline-block; background-color: #f1f5f9; color: #475569; border: 1px solid #cbd5e1;">Checking database connection...</span>
+      </div>
     </div>
     <div>
-      <span style="font-size: 12px; color: #94a3b8; font-weight: 500;">Offline Application &mdash; No Internet Required</span>
+      <span style="font-size: 12px; color: #94a3b8; font-weight: 500;">Vehicle Dashboard &mdash; Static Customer Vehicles Mission Report</span>
     </div>
   </header>
 
@@ -698,6 +701,9 @@
       addVersionRow('VT_BOX Version', '');
       addVersionRow('VCU Firmware Version', '');
 
+      // Check database connection status on load
+      checkDatabaseStatus();
+
       const scriptTag = document.getElementById('vehicles-json-state');
       if (scriptTag && scriptTag.textContent.trim()) {
         try {
@@ -716,6 +722,46 @@
         }
       }
     };
+
+    // Check Database Status
+    function checkDatabaseStatus() {
+      const statusBadge = document.getElementById('db-status-badge');
+      if (!statusBadge) return;
+      
+      fetch('/api/status')
+        .then(response => {
+          if (!response.ok) throw new Error("Server responded with error status");
+          return response.json();
+        })
+        .then(data => {
+          if (data && data.database) {
+            if (data.database.connected) {
+              statusBadge.style.backgroundColor = '#dcfce7';
+              statusBadge.style.color = '#16a34a';
+              statusBadge.style.border = '1px solid #bbf7d0';
+              statusBadge.textContent = '✅ Database Connected (Render PostgreSQL)';
+            } else {
+              statusBadge.style.backgroundColor = '#fee2e2';
+              statusBadge.style.color = '#dc2626';
+              statusBadge.style.border = '1px solid #fecaca';
+              statusBadge.textContent = '❌ Database Error: ' + (data.database.error || 'Connection Failed');
+              console.error("Database connection error:", data.database.error);
+            }
+          } else {
+            statusBadge.style.backgroundColor = '#ffedd5';
+            statusBadge.style.color = '#ea580c';
+            statusBadge.style.border = '1px solid #fed7aa';
+            statusBadge.textContent = '⚠️ Unknown database connection state';
+          }
+        })
+        .catch(err => {
+          statusBadge.style.backgroundColor = '#f1f5f9';
+          statusBadge.style.color = '#475569';
+          statusBadge.style.border = '1px solid #cbd5e1';
+          statusBadge.textContent = 'ℹ️ Running Locally (SQLite/Offline Mode)';
+          console.warn("Database status check failed (possibly running offline):", err);
+        });
+    }
 
     // Populate Custom Search Dropdown
     function populateSearchDropdown() {
@@ -1071,12 +1117,26 @@
         },
         body: JSON.stringify(state_data)
       })
-      .then(response => response.json())
+      .then(response => {
+        if (!response.ok) {
+          return response.json().then(errData => {
+            throw new Error(errData.message || "Server error saving state");
+          }).catch(() => {
+            throw new Error("HTTP error " + response.status);
+          });
+        }
+        return response.json();
+      })
       .then(data => {
-        console.log("State saved to server:", data);
+        console.log("State saved to server successfully:", data);
+        // Refresh the database badge in case it recovered
+        checkDatabaseStatus();
       })
       .catch(error => {
         console.error("Error saving state:", error);
+        alert("❌ Error: Could not save data to database!\n" + error.message + "\n\nPlease check the database status banner in the header.");
+        // Refresh the database badge to show connection error details
+        checkDatabaseStatus();
       });
     }
 

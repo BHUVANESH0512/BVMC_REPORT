@@ -91,6 +91,14 @@ def get_db_connection():
     import psycopg2
     if db_url.startswith("postgres://"):
         db_url = db_url.replace("postgres://", "postgresql://", 1)
+    
+    # Auto-append sslmode=require if not present in the URL
+    if "sslmode=" not in db_url:
+        if "?" in db_url:
+            db_url += "&sslmode=require"
+        else:
+            db_url += "?sslmode=require"
+            
     return psycopg2.connect(db_url)
 
 def init_db():
@@ -176,10 +184,15 @@ def load_previous_vehicles():
 
 def save_state_to_builder(vehicles, global_duration):
     # Save to database first
+    db_err_to_raise = None
     try:
         save_state_to_db(vehicles, global_duration)
     except Exception as db_err:
         print(f"⚠️ Warning: Could not save state to database ({db_err})")
+        db_err_to_raise = db_err
+        
+    if db_err_to_raise and os.environ.get("DATABASE_URL"):
+        raise db_err_to_raise
 
     dir_path = os.path.dirname(os.path.abspath(__file__))
     builder_file = os.path.join(dir_path, "vehicle_mission_report-4.html")
@@ -880,6 +893,29 @@ class CustomHandler(http.server.SimpleHTTPRequestHandler):
             self.send_header('Content-Type', 'application/json')
             self.end_headers()
             self.wfile.write(json.dumps({"status": "healthy"}).encode('utf-8'))
+            return
+
+        # Status endpoint to report database connectivity to frontend builder
+        if self.path == '/api/status':
+            db_connected = False
+            db_error = None
+            try:
+                conn = get_db_connection()
+                conn.close()
+                db_connected = True
+            except Exception as e:
+                db_error = str(e)
+            
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json')
+            self.end_headers()
+            self.wfile.write(json.dumps({
+                "status": "healthy",
+                "database": {
+                    "connected": db_connected,
+                    "error": db_error
+                }
+            }).encode('utf-8'))
             return
 
         # Serve vehicle_mission_report-4.html as the root index page
