@@ -84,22 +84,28 @@ PREDEFINED_VEHICLES = {
     "MD9GBUE28DC341012": {"nickname": "Yellow Dragon", "location": "Not Available", "mode": "Autonomous"}
 }
 
+import sqlite3
+
 def get_db_connection():
     db_url = os.environ.get("DATABASE_URL")
-    if not db_url:
-        raise RuntimeError("DATABASE_URL environment variable is not set.")
-    import psycopg2
-    if db_url.startswith("postgres://"):
-        db_url = db_url.replace("postgres://", "postgresql://", 1)
-    
-    # Auto-append sslmode=require if not present in the URL
-    if "sslmode=" not in db_url:
-        if "?" in db_url:
-            db_url += "&sslmode=require"
-        else:
-            db_url += "?sslmode=require"
-            
-    return psycopg2.connect(db_url)
+    if db_url:
+        import psycopg2
+        if db_url.startswith("postgres://"):
+            db_url = db_url.replace("postgres://", "postgresql://", 1)
+        
+        # Auto-append sslmode=require if not present in the URL
+        if "sslmode=" not in db_url:
+            if "?" in db_url:
+                db_url += "&sslmode=require"
+            else:
+                db_url += "?sslmode=require"
+                
+        return psycopg2.connect(db_url)
+    else:
+        # Fallback to local SQLite database in the same directory as the script
+        dir_path = os.path.dirname(os.path.abspath(__file__))
+        db_path = os.path.join(dir_path, "fleet_state.db")
+        return sqlite3.connect(db_path)
 
 def init_db():
     conn = get_db_connection()
@@ -119,23 +125,60 @@ def save_state_to_db(vehicles, global_duration):
     cursor = conn.cursor()
     vehicles_json = json.dumps(vehicles)
     
+    is_sqlite = not bool(os.environ.get("DATABASE_URL"))
+    placeholder = "?" if is_sqlite else "%s"
+    
     # Check if row 1 exists
     cursor.execute("SELECT id FROM fleet_state WHERE id = 1")
     if cursor.fetchone():
-        cursor.execute("UPDATE fleet_state SET global_duration = %s, vehicles_json = %s WHERE id = 1", (global_duration, vehicles_json))
+        query = f"UPDATE fleet_state SET global_duration = {placeholder}, vehicles_json = {placeholder} WHERE id = 1"
+        cursor.execute(query, (global_duration, vehicles_json))
     else:
-        cursor.execute("INSERT INTO fleet_state (id, global_duration, vehicles_json) VALUES (1, %s, %s)", (global_duration, vehicles_json))
+        query = f"INSERT INTO fleet_state (id, global_duration, vehicles_json) VALUES (1, {placeholder}, {placeholder})"
+        cursor.execute(query, (global_duration, vehicles_json))
             
     conn.commit()
     conn.close()
 
+def save_state_to_json(vehicles, global_duration):
+    try:
+        dir_path = os.path.dirname(os.path.abspath(__file__))
+        json_path = os.path.join(dir_path, "fleet_state.json")
+        state_data = {
+            "global_duration": global_duration,
+            "vehicles": vehicles
+        }
+        with open(json_path, "w", encoding="utf-8") as f:
+            json.dump(state_data, f, indent=2)
+        print(f"✅ Local backup saved to {json_path}")
+    except Exception as e:
+        print(f"⚠️ Warning: Could not save state to fleet_state.json ({e})")
+
 def load_previous_vehicles():
+    dir_path = os.path.dirname(os.path.abspath(__file__))
+    json_path = os.path.join(dir_path, "fleet_state.json")
+    is_sqlite = not bool(os.environ.get("DATABASE_URL"))
+
+    # 1. In local mode (SQLite), try loading from JSON backup file first (so manual JSON edits or backups are preserved)
+    if is_sqlite and os.path.exists(json_path):
+        try:
+            with open(json_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                if isinstance(data, dict) and "vehicles" in data and data["vehicles"]:
+                    print("✅ Successfully loaded state from fleet_state.json backup (Local Mode Primary).")
+                    # Sync to SQLite db
+                    try:
+                        init_db()
+                        save_state_to_db(data.get("vehicles", {}), data.get("global_duration", ""))
+                    except Exception as db_err:
+                        print(f"⚠️ Warning: Could not sync JSON state to SQLite database ({db_err})")
+                    return data
+        except Exception as e:
+            print(f"⚠️ Warning: Could not load state from fleet_state.json ({e})")
+
+    # 2. Try database (PostgreSQL or SQLite)
     try:
         init_db()
-    except Exception as e:
-        print(f"⚠️ Warning: Could not initialize database ({e})")
-        
-    try:
         conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute("SELECT global_duration, vehicles_json FROM fleet_state WHERE id = 1")
@@ -145,13 +188,30 @@ def load_previous_vehicles():
         if row:
             global_duration, vehicles_json = row
             vehicles = json.loads(vehicles_json) if vehicles_json else {}
-            return {"global_duration": global_duration or "", "vehicles": vehicles}
+            if vehicles:
+                print("✅ Successfully loaded state from database.")
+                return {"global_duration": global_duration or "", "vehicles": vehicles}
     except Exception as e:
         print(f"⚠️ Warning: Could not load state from database ({e})")
         
-    # Fallback to HTML state (also seeds the database if empty)
+    # 3. Try JSON backup file (as fallback if not loaded in step 1 or if not running locally)
+    if os.path.exists(json_path):
+        try:
+            with open(json_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                if isinstance(data, dict) and "vehicles" in data:
+                    print("✅ Successfully loaded state from fleet_state.json backup.")
+                    # Try to populate/sync database from JSON
+                    try:
+                        save_state_to_db(data.get("vehicles", {}), data.get("global_duration", ""))
+                    except:
+                        pass
+                    return data
+        except Exception as e:
+            print(f"⚠️ Warning: Could not load state from fleet_state.json ({e})")
+
+    # 4. Fallback to HTML state (also seeds the database/json if empty)
     html_state = {"global_duration": "", "vehicles": {}}
-    dir_path = os.path.dirname(os.path.abspath(__file__))
     dest_file = os.path.join(dir_path, "vehicle_mission_report-4.html")
     if not os.path.exists(dest_file):
         dest_file = os.path.join(dir_path, "vehicle_mission_report_email.html")
@@ -171,19 +231,20 @@ def load_previous_vehicles():
                 else:
                     html_state = {"global_duration": "", "vehicles": parsed}
                 
-                # Seed database from HTML state
+                # Seed database/JSON from HTML state
                 try:
                     save_state_to_db(html_state.get("vehicles", {}), html_state.get("global_duration", ""))
-                    print("✅ Successfully seeded database with HTML state data.")
+                    save_state_to_json(html_state.get("vehicles", {}), html_state.get("global_duration", ""))
+                    print("✅ Successfully seeded database and JSON with HTML state data.")
                 except Exception as seed_err:
-                    print(f"⚠️ Warning: Could not seed database ({seed_err})")
+                    print(f"⚠️ Warning: Could not seed database/JSON ({seed_err})")
         except Exception as e:
             print(f"⚠️ Warning: Could not parse previous state data from HTML ({e}). Starting fresh.")
             
     return html_state
 
 def save_state_to_builder(vehicles, global_duration):
-    # Save to database first
+    # Save to database (PostgreSQL or SQLite)
     db_err_to_raise = None
     try:
         save_state_to_db(vehicles, global_duration)
@@ -191,6 +252,12 @@ def save_state_to_builder(vehicles, global_duration):
         print(f"⚠️ Warning: Could not save state to database ({db_err})")
         db_err_to_raise = db_err
         
+    # Save to json file as backup
+    try:
+        save_state_to_json(vehicles, global_duration)
+    except Exception as json_err:
+        print(f"⚠️ Warning: Could not save state to JSON file ({json_err})")
+
     if db_err_to_raise and os.environ.get("DATABASE_URL"):
         raise db_err_to_raise
 
@@ -209,18 +276,27 @@ def save_state_to_builder(vehicles, global_duration):
         }
         json_str = json.dumps(state_data, indent=2)
         
-        # Replace content inside the script tags in the builder
-        new_content = re.sub(
-            r'<script type="application/json" id="vehicles-json-state">.*?</script>',
-            f'<script type="application/json" id="vehicles-json-state">\n  {json_str}\n  </script>',
-            content,
-            flags=re.DOTALL
+        # Replace content inside the script tags in the builder safely without regex bad escape issues
+        start_tag = '<script type="application/json" id="vehicles-json-state">'
+        end_tag = '</script>'
+        start_idx = content.find(start_tag)
+        if start_idx == -1:
+            raise ValueError(f"Could not find start tag: {start_tag}")
+        end_idx = content.find(end_tag, start_idx)
+        if end_idx == -1:
+            raise ValueError(f"Could not find end tag: {end_tag}")
+            
+        new_content = (
+            content[:start_idx + len(start_tag)] +
+            "\n  " + json_str + "\n  " +
+            content[end_idx:]
         )
         
         with open(builder_file, "w", encoding="utf-8") as f:
             f.write(new_content)
     except Exception as e:
         print(f"⚠️ Warning: Could not save state back to HTML builder ({e})")
+
 
 def prompt_vehicle_data(vin, existing_data=None):
     # Determine defaults
@@ -496,7 +572,7 @@ def get_issue_summary_section(vehicles, global_duration):
             mdm_list.append(f'{vehicle_link} ({vin}) — {desc}.')
         elif status == 'inactive':
             timestamp = val.get("timestamp") or "Not Available"
-            inactive_list.append(f'{vehicle_link} — Last updated {timestamp}')
+            inactive_list.append(f'<strong><span style="color: #64748b;">{nick}</span></strong> — Last updated {timestamp}')
         elif status == 'unhealthy':
             if any("data loss" in issue.lower() for issue in issues):
                 data_loss_list.append(f'{vehicle_link} — {issues_str}')
@@ -506,7 +582,7 @@ def get_issue_summary_section(vehicles, global_duration):
                 else:
                     bms_list.append(f'{vehicle_link} — {issues_str}')
         elif status == 'healthy':
-            ok_list.append(f'<a href="#vin-{vin}" style="color:#16a34a; font-weight:600; text-decoration:none;">{nick}</a>')
+            ok_list.append(f'<span style="color:#16a34a; font-weight:600;">{nick}</span>')
 
         # Temp anomalies
         if vin in temp_anomaly_vins:
@@ -557,7 +633,7 @@ def get_issue_summary_section(vehicles, global_duration):
 
     return f"""
     <!-- ISSUE SUMMARY SECTION -->
-    <tr>
+    <tr id="issue-summary">
       <td style="padding: 24px; border-top: 1px solid #e2e8f0;">
         <table width="100%" border="0" cellpadding="0" cellspacing="0" style="border-bottom: 2px solid #f1f5f9; padding-bottom: 8px; margin-bottom: 16px;">
           <tr>
@@ -675,7 +751,9 @@ def generate_html_report(vehicles, global_duration):
         html_out += get_issue_summary_section(vehicles, global_duration)
 
         # VEHICLE DETAILS SECTION
-        html_out += """
+        has_issue_cards = any(v.get("status") not in ["healthy", "inactive"] for v in vehicles.values())
+        if has_issue_cards:
+            html_out += """
     <!-- VEHICLE DETAILS SECTION -->
     <tr>
       <td style="padding: 16px 20px; background-color: #fafbfc; border-top: 1px solid #e2e8f0;">
@@ -684,164 +762,166 @@ def generate_html_report(vehicles, global_duration):
         </h2>
 """
 
-        for vin in sorted(vehicles.keys()):
-            val = vehicles[vin]
-            versions = val.get("versions", {})
-            versions_html = ""
-            if versions:
-                cells = []
-                for k, v in sorted(versions.items()):
-                    if v.strip():
-                        cells.append(f'<span style="color: #475569; font-weight: 600;">{k}:</span> <span style="color: #0f172a; margin-right: 15px;">{v}</span>')
-                if cells:
-                    joined_cells = " &nbsp;|&nbsp; ".join(cells)
-                    versions_html = f"""
-                    <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px; margin-bottom: 8px; font-size: 10px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
-                      {joined_cells}
-                    </div>
-                    """
-            status = val.get("status", "healthy")
-            
-            card_border_color = "#22c55e"
-            status_header = '<span style="color: #16a34a; font-weight: bold;">HEALTHY</span>'
-            
-            if status == 'unhealthy':
-                card_border_color = "#ef4444"
-                status_header = '<span style="color: #dc2626; font-weight: bold;">ISSUE DETECTED</span>'
-            elif status == 'inactive':
-                card_border_color = "#64748b"
-                status_header = '<span style="color: #64748b; font-weight: bold;">NOT ACTIVE</span>'
-            elif status == 'mdm_issue':
-                card_border_color = "#ea580c"
-                status_header = '<span style="color: #ea580c; font-weight: bold;">MDM ISSUE</span>'
+            for vin in sorted(vehicles.keys()):
+                val = vehicles[vin]
+                status = val.get("status", "healthy")
+                if status in ['healthy', 'inactive']:
+                    continue
 
-            # Anomaly content
-            if status == 'healthy':
-                anomalies_section = """
-                    <div style="background-color: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px; padding: 12px; color: #166534; font-size: 11px; font-weight: 500;">
-                      ✓ No system anomalies or safety faults detected.
-                    </div>
-                """
-            elif status == 'inactive':
-                timestamp_str = val.get("timestamp") or "Not Available"
-                anomalies_section = f"""
-                    <div style="background-color: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px; color: #475569; font-size: 11px; font-weight: 500;">
-                      ⊘ Vehicle is currently Not Active / Not Available. Last active timestamp: <strong>{timestamp_str}</strong>
-                    </div>
-                """
-            elif status == 'mdm_issue':
-                vt_box_time = val.get("vt_box_time") or "Not Available"
-                anomalies_section = f"""
-                    <div style="background-color: #fff7ed; border: 1px solid #ffedd5; border-radius: 6px; padding: 12px; color: #c2410c; font-size: 11px; font-weight: 500;">
-                      ⚠ MDM Issue: Monitoring flag is True, but no data came. VT_BOX came online at: <strong>{vt_box_time}</strong>
-                    </div>
-                """
-            else:
-                table_rows = ""
-                for idx, issue in enumerate(val.get("issues", []), start=1):
-                    table_rows += f"""
-                    <tr style="border-bottom: 1px solid #e2e8f0;">
-                      <td style="padding: 8px 10px; border-bottom: 1px solid #e2e8f0; color: #0f172a; font-family: monospace; text-align: left;">{idx:03d}</td>
-                      <td style="padding: 8px 10px; border-bottom: 1px solid #e2e8f0; color: #475569; font-weight: 600; text-align: left;">User Reported</td>
-                      <td style="padding: 8px 10px; border-bottom: 1px solid #e2e8f0; color: #0f172a; text-align: left;">{issue}</td>
-                      <td style="padding: 8px 10px; border-bottom: 1px solid #e2e8f0; text-align: left;"><span style="display: inline-block; padding: 3px 8px; font-size: 10px; font-weight: bold; border-radius: 12px; background-color: #fee2e2; color: #dc2626; text-transform: uppercase;">Critical</span></td>
-                      <td style="padding: 8px 10px; border-bottom: 1px solid #e2e8f0; color: #475569; text-align: left;">Inspect vehicle diagnostics</td>
-                    </tr>
+                versions = val.get("versions", {})
+                versions_html = ""
+                if versions:
+                    cells = []
+                    for k, v in sorted(versions.items()):
+                        if v.strip():
+                            cells.append(f'<span style="color: #475569; font-weight: 600;">{k}:</span> <span style="color: #0f172a; margin-right: 15px;">{v}</span>')
+                    if cells:
+                        joined_cells = " &nbsp;|&nbsp; ".join(cells)
+                        versions_html = f"""
+                        <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px; margin-bottom: 8px; font-size: 10px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+                          {joined_cells}
+                        </div>
+                        """
+                
+                card_border_color = "#22c55e"
+                status_header = '<span style="color: #16a34a; font-weight: bold;">HEALTHY</span>'
+                
+                if status == 'unhealthy':
+                    card_border_color = "#ef4444"
+                    status_header = '<span style="color: #dc2626; font-weight: bold;">ISSUE DETECTED</span>'
+                elif status == 'inactive':
+                    card_border_color = "#64748b"
+                    status_header = '<span style="color: #64748b; font-weight: bold;">NOT ACTIVE</span>'
+                elif status == 'mdm_issue':
+                    card_border_color = "#ea580c"
+                    status_header = '<span style="color: #ea580c; font-weight: bold;">MDM ISSUE</span>'
+
+                # Anomaly content
+                if status == 'inactive':
+                    timestamp_str = val.get("timestamp") or "Not Available"
+                    anomalies_section = f"""
+                        <div style="background-color: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px; color: #475569; font-size: 11px; font-weight: 500;">
+                          ⊘ Vehicle is currently Not Active / Not Available. Last active timestamp: <strong>{timestamp_str}</strong>
+                        </div>
                     """
-                anomalies_section = f"""
-                    <table width="100%" border="0" cellpadding="0" cellspacing="0" style="font-size: 11px; border: 1px solid #e2e8f0; border-radius: 6px; overflow: hidden;">
-                      <thead>
-                        <tr bgcolor="#f8fafc">
-                          <th style="padding: 8px 10px; font-weight: 600; text-align: left; border-bottom: 1px solid #e2e8f0; color: #475569; width: 45px;">ID</th>
-                          <th style="padding: 8px 10px; font-weight: 600; text-align: left; border-bottom: 1px solid #e2e8f0; color: #475569; width: 110px;">System</th>
-                          <th style="padding: 8px 10px; font-weight: 600; text-align: left; border-bottom: 1px solid #e2e8f0; color: #475569;">Description</th>
-                          <th style="padding: 8px 10px; font-weight: 600; text-align: left; border-bottom: 1px solid #e2e8f0; color: #475569; width: 85px;">Severity</th>
-                          <th style="padding: 8px 10px; font-weight: 600; text-align: left; border-bottom: 1px solid #e2e8f0; color: #475569; width: 180px;">Recommended Action</th>
+                elif status == 'mdm_issue':
+                    vt_box_time = val.get("vt_box_time") or "Not Available"
+                    anomalies_section = f"""
+                        <div style="background-color: #fff7ed; border: 1px solid #ffedd5; border-radius: 6px; padding: 12px; color: #c2410c; font-size: 11px; font-weight: 500;">
+                          ⚠ MDM Issue: Monitoring flag is True, but no data came. VT_BOX came online at: <strong>{vt_box_time}</strong>
+                        </div>
+                    """
+                else:
+                    table_rows = ""
+                    for idx, issue in enumerate(val.get("issues", []), start=1):
+                        table_rows += f"""
+                        <tr style="border-bottom: 1px solid #e2e8f0;">
+                          <td style="padding: 8px 10px; border-bottom: 1px solid #e2e8f0; color: #0f172a; font-family: monospace; text-align: left;">{idx:03d}</td>
+                          <td style="padding: 8px 10px; border-bottom: 1px solid #e2e8f0; color: #475569; font-weight: 600; text-align: left;">User Reported</td>
+                          <td style="padding: 8px 10px; border-bottom: 1px solid #e2e8f0; color: #0f172a; text-align: left;">{issue}</td>
+                          <td style="padding: 8px 10px; border-bottom: 1px solid #e2e8f0; text-align: left;"><span style="display: inline-block; padding: 3px 8px; font-size: 10px; font-weight: bold; border-radius: 12px; background-color: #fee2e2; color: #dc2626; text-transform: uppercase;">Critical</span></td>
+                          <td style="padding: 8px 10px; border-bottom: 1px solid #e2e8f0; color: #475569; text-align: left;">Inspect vehicle diagnostics</td>
                         </tr>
-                      </thead>
-                      <tbody style="background-color: #ffffff;">
-                        {table_rows}
-                      </tbody>
+                        """
+                    anomalies_section = f"""
+                        <table width="100%" border="0" cellpadding="0" cellspacing="0" style="font-size: 11px; border: 1px solid #e2e8f0; border-radius: 6px; overflow: hidden;">
+                          <thead>
+                            <tr bgcolor="#f8fafc">
+                              <th style="padding: 8px 10px; font-weight: 600; text-align: left; border-bottom: 1px solid #e2e8f0; color: #475569; width: 45px;">ID</th>
+                              <th style="padding: 8px 10px; font-weight: 600; text-align: left; border-bottom: 1px solid #e2e8f0; color: #475569; width: 110px;">System</th>
+                              <th style="padding: 8px 10px; font-weight: 600; text-align: left; border-bottom: 1px solid #e2e8f0; color: #475569;">Description</th>
+                              <th style="padding: 8px 10px; font-weight: 600; text-align: left; border-bottom: 1px solid #e2e8f0; color: #475569; width: 85px;">Severity</th>
+                              <th style="padding: 8px 10px; font-weight: 600; text-align: left; border-bottom: 1px solid #e2e8f0; color: #475569; width: 180px;">Recommended Action</th>
+                            </tr>
+                          </thead>
+                          <tbody style="background-color: #ffffff;">
+                            {table_rows}
+                          </tbody>
+                        </table>
+                    """
+
+                dist_val = f"{val['distance']} km" if status != 'inactive' else "Nil"
+                dur_val = val['duration'] if status != 'inactive' else "Nil"
+                
+                extra_kpi_row = ""
+                if status == 'mdm_issue':
+                    extra_kpi_row = f"""
+                    <table width="100%" border="0" cellpadding="0" cellspacing="0" style="margin-bottom: 16px;">
+                      <tr>
+                        <td>
+                          <div style="background-color: #fff7ed; border: 1px solid #ffedd5; border-radius: 6px; padding: 10px;">
+                            <span style="font-size: 8px; color: #ea580c; text-transform: uppercase; font-weight: bold; display: block; margin-bottom: 2px;">VT_BOX Online Time</span>
+                            <span style="font-size: 11px; font-weight: 700; color: #c2410c;">{val.get('vt_box_time', 'Not Available')}</span>
+                          </div>
+                        </td>
+                      </tr>
                     </table>
-                """
+                    """
 
-            dist_val = f"{val['distance']} km" if status != 'inactive' else "Nil"
-            dur_val = val['duration'] if status != 'inactive' else "Nil"
-            
-            extra_kpi_row = ""
-            if status == 'mdm_issue':
-                extra_kpi_row = f"""
-                <table width="100%" border="0" cellpadding="0" cellspacing="0" style="margin-bottom: 16px;">
-                  <tr>
-                    <td>
-                      <div style="background-color: #fff7ed; border: 1px solid #ffedd5; border-radius: 6px; padding: 10px;">
-                        <span style="font-size: 8px; color: #ea580c; text-transform: uppercase; font-weight: bold; display: block; margin-bottom: 2px;">VT_BOX Online Time</span>
-                        <span style="font-size: 11px; font-weight: 700; color: #c2410c;">{val.get('vt_box_time', 'Not Available')}</span>
-                      </div>
-                    </td>
-                  </tr>
-                </table>
-                """
+                html_out += f"""
+            <!-- VEHICLE CARD: {vin} -->
+            <div id="vin-{vin}" style="background-color: #ffffff; border: 1px solid #e2e8f0; border-left: 4px solid {card_border_color}; border-radius: 6px; padding: 12px; margin-bottom: 14px; box-shadow: 0 1px 4px rgba(0,0,0,.05);">
+              
+              <!-- Card Header -->
+              <table width="100%" border="0" cellpadding="0" cellspacing="0" style="margin-bottom: 8px;">
+                <tr>
+                  <td>
+                    <span style="font-size: 14px; font-weight: 700; color: #0f172a; font-family: Courier, monospace;">VIN: {vin}</span>
+                    <div style="font-size: 9px; color: #64748b; margin-top: 2px;line-height:1.3;">Nickname: <strong>{val['nickname']}</strong> &nbsp;|&nbsp; Location: <strong>{val['location']}</strong></div>
+                  </td>
+                  <td style="text-align: right; vertical-align: top;">
+                    {status_header}
+                  </td>
+                </tr>
+              </table>
 
-            html_out += f"""
-        <!-- VEHICLE CARD: {vin} -->
-        <div id="vin-{vin}" style="background-color: #ffffff; border: 1px solid #e2e8f0; border-left: 4px solid {card_border_color}; border-radius: 6px; padding: 12px; margin-bottom: 14px; box-shadow: 0 1px 4px rgba(0,0,0,.05);">
-          
-          <!-- Card Header -->
-          <table width="100%" border="0" cellpadding="0" cellspacing="0" style="margin-bottom: 8px;">
-            <tr>
-              <td>
-                <span style="font-size: 14px; font-weight: 700; color: #0f172a; font-family: Courier, monospace;">VIN: {vin}</span>
-                <div style="font-size: 9px; color: #64748b; margin-top: 2px;line-height:1.3;">Nickname: <strong>{val['nickname']}</strong> &nbsp;|&nbsp; Location: <strong>{val['location']}</strong></div>
-              </td>
-              <td style="text-align: right; vertical-align: top;">
-                {status_header}
-              </td>
-            </tr>
-          </table>
+              <!-- Overview KPI blocks -->
+              <table width="100%" border="0" cellpadding="0" cellspacing="0" style="margin-bottom: 8px;">
+                <tr>
+                  <td width="25%" style="padding-right: 8px;">
+                    <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 5px; text-align: center;">
+                      <div style="font-size: 6px; color: #64748b; text-transform: uppercase; margin-bottom: 2px;">Vehicle Mode</div>
+                      <div style="font-size: 6px; font-weight: 700; color: #1d4ed8;">{val['mode']}</div>
+                    </div>
+                  </td>
+                  <td width="25%" style="padding-left: 4px; padding-right: 4px;">
+                    <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 5px; text-align: center;">
+                      <div style="font-size: 6px; color: #64748b; text-transform: uppercase; margin-bottom: 2px;">Distance Travelled</div>
+                      <div style="font-size: 11px; font-weight: 700; color: #0f172a;">{dist_val}</div>
+                    </div>
+                  </td>
+                  <td width="25%" style="padding-left: 4px; padding-right: 4px;">
+                    <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 5px; text-align: center;">
+                      <div style="font-size: 6px; color: #64748b; text-transform: uppercase; margin-bottom: 2px;">Logged Duration</div>
+                      <div style="font-size: 11px; font-weight: 700; color: #0f172a;">{dur_val}</div>
+                    </div>
+                  </td>
+                  <td width="25%" style="padding-left: 8px;">
+                    <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 5px; text-align: center;">
+                      <div style="font-size: 5px; color: #64748b; text-transform: uppercase; margin-bottom: 2px;">Total Issues Logged</div>
+                      <div style="font-size: 11px; font-weight: 700; color: { '#16a34a' if status == 'healthy' else ('#64748b' if status == 'inactive' else ('#ea580c' if status == 'mdm_issue' else '#dc2626')) };">{len(val.get('issues', []))}</div>
+                    </div>
+                  </td>
+                </tr>
+              </table>
 
-          <!-- Overview KPI blocks -->
-          <table width="100%" border="0" cellpadding="0" cellspacing="0" style="margin-bottom: 8px;">
-            <tr>
-              <td width="25%" style="padding-right: 8px;">
-                <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 5px; text-align: center;">
-                  <div style="font-size: 6px; color: #64748b; text-transform: uppercase; margin-bottom: 2px;">Vehicle Mode</div>
-                  <div style="font-size: 6px; font-weight: 700; color: #1d4ed8;">{val['mode']}</div>
-                </div>
-              </td>
-              <td width="25%" style="padding-left: 4px; padding-right: 4px;">
-                <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 5px; text-align: center;">
-                  <div style="font-size: 6px; color: #64748b; text-transform: uppercase; margin-bottom: 2px;">Distance Travelled</div>
-                  <div style="font-size: 11px; font-weight: 700; color: #0f172a;">{dist_val}</div>
-                </div>
-              </td>
-              <td width="25%" style="padding-left: 4px; padding-right: 4px;">
-                <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 5px; text-align: center;">
-                  <div style="font-size: 6px; color: #64748b; text-transform: uppercase; margin-bottom: 2px;">Logged Duration</div>
-                  <div style="font-size: 11px; font-weight: 700; color: #0f172a;">{dur_val}</div>
-                </div>
-              </td>
-              <td width="25%" style="padding-left: 8px;">
-                <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 5px; text-align: center;">
-                  <div style="font-size: 5px; color: #64748b; text-transform: uppercase; margin-bottom: 2px;">Total Issues Logged</div>
-                  <div style="font-size: 11px; font-weight: 700; color: { '#16a34a' if status == 'healthy' else ('#64748b' if status == 'inactive' else ('#ea580c' if status == 'mdm_issue' else '#dc2626')) };">{len(val.get('issues', []))}</div>
-                </div>
-              </td>
-            </tr>
-          </table>
+              {extra_kpi_row}
 
-          {extra_kpi_row}
+              {versions_html}
 
-          {versions_html}
+              <div style="font-size: 11px; font-weight: 600; color: #475569; margin-bottom: 8px; text-transform: uppercase;">⚠️ System Diagnostics & Activity Status</div>
+              {anomalies_section}
 
-          <div style="font-size: 11px; font-weight: 600; color: #475569; margin-bottom: 8px; text-transform: uppercase;">⚠️ System Diagnostics & Activity Status</div>
-          {anomalies_section}
+              <div style="text-align: right; margin-top: 15px;">
+                <a href="#issue-summary" style="font-size: 10px; color: #2563eb; text-decoration: none; font-weight: 600;">&uarr; Back to Customer Vehicles Overview</a>
+              </div>
+            </div>
+            """
 
-          <div style="text-align: right; margin-top: 15px;">
-            <a href="#" style="font-size: 10px; color: #2563eb; text-decoration: none; font-weight: 600;">&uarr; Back to Customer Vehicles Overview</a>
-          </div>
-        </div>
-        """
+            html_out += """
+      </td>
+    </tr>
+"""
 
     # Persistent JSON state block
     state_json = {"global_duration": global_duration, "vehicles": vehicles}
@@ -857,11 +937,6 @@ def generate_html_report(vehicles, global_duration):
     </tr>
 
   </table>
-
-  <!-- PERSISTENT STATE DATA -->
-  <script type="application/json" id="vehicles-json-state-report">
-  {state_json_str}
-  </script>
 
 </body>
 </html>
@@ -899,6 +974,7 @@ class CustomHandler(http.server.SimpleHTTPRequestHandler):
         if self.path == '/api/status':
             db_connected = False
             db_error = None
+            db_type = "SQLite" if not os.environ.get("DATABASE_URL") else "PostgreSQL"
             try:
                 conn = get_db_connection()
                 conn.close()
@@ -913,7 +989,8 @@ class CustomHandler(http.server.SimpleHTTPRequestHandler):
                 "status": "healthy",
                 "database": {
                     "connected": db_connected,
-                    "error": db_error
+                    "error": db_error,
+                    "type": db_type
                 }
             }).encode('utf-8'))
             return

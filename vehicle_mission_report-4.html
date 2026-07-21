@@ -1357,7 +1357,7 @@
 
       const issueSummaryHTML = `
     <!-- ISSUE SUMMARY SECTION -->
-    <tr>
+    <tr id="issue-summary">
       <td style="padding: 24px; border-top: 1px solid #e2e8f0;">
         <table width="100%" border="0" cellpadding="0" cellspacing="0" style="border-bottom: 2px solid #f1f5f9; padding-bottom: 8px; margin-bottom: 16px;">
           <tr>
@@ -1401,9 +1401,13 @@
         const distStr = val.status === 'inactive' ? 'Nil' : `${val.distance} km`;
         const durStr = val.status === 'inactive' ? 'Nil' : val.duration;
 
+        const vinLink = (val.status === 'healthy' || val.status === 'inactive')
+          ? `<span style="font-weight: 600; color: #0f172a;">${vin}</span>` 
+          : `<a href="#vin-${vin}" style="color: #2563eb; font-weight: 600; text-decoration: none;">${vin}</a>`;
+
         summaryRows += `
         <tr style="border-bottom: 1px solid #f1f5f9;">
-          <td style="padding: 12px; border-bottom: 1px solid #f1f5f9;"><a href="#vin-${vin}" style="color: #2563eb; font-weight: 600; text-decoration: none;">${vin}</a></td>
+          <td style="padding: 12px; border-bottom: 1px solid #f1f5f9;">${vinLink}</td>
           <td style="padding: 12px; border-bottom: 1px solid #f1f5f9; color: #475569;">${val.nickname}</td>
           <td style="padding: 12px; border-bottom: 1px solid #f1f5f9; color: #475569;">${val.location}</td>
           <td style="padding: 12px; border-bottom: 1px solid #f1f5f9;">${modeBadge}</td>
@@ -1417,6 +1421,7 @@
       let detailCards = '';
       vins.sort().forEach(vin => {
         const val = activeFleet[vin];
+        if (val.status === 'healthy' || val.status === 'inactive') return;
         
         let versionsHTML = '';
         if (val.versions && Object.keys(val.versions).length > 0) {
@@ -1562,7 +1567,7 @@
           ${anomaliesHTML}
 
           <div style="text-align: right; margin-top: 15px;">
-            <a href="#" style="font-size: 10px; color: #2563eb; text-decoration: none; font-weight: 600;">&uarr; Back to Customer Vehicles Overview</a>
+            <a href="#issue-summary" style="font-size: 10px; color: #2563eb; text-decoration: none; font-weight: 600;">&uarr; Back to Customer Vehicles Overview</a>
           </div>
         </div>`;
       });
@@ -1688,8 +1693,969 @@
   <!-- PERSISTENT STATE DATA (For loading if pre-saved) -->
   <script type="application/json" id="vehicles-json-state">
   {
-  "global_duration": "",
-  "vehicles": {}
+  "global_duration": "08-07-2026 to 19-07-2026",
+  "vehicles": {
+    "MD9GBUE28DC341009": {
+      "vin": "MD9GBUE28DC341009",
+      "nickname": "Green HC(PST)",
+      "location": "PST",
+      "mode": "Non-Autonomous",
+      "status": "inactive",
+      "issues": [],
+      "timestamp": "09-12-2024",
+      "vt_box_time": "",
+      "distance": "Nil",
+      "duration": "Nil",
+      "versions": {
+        "VT_BOX Version": "",
+        "VCU Firmware Version": ""
+      }
+    },
+    "MD9GBUE27DC341051": {
+      "vin": "MD9GBUE27DC341051",
+      "nickname": "P2 Vehicle",
+      "location": "Not Available",
+      "mode": "Non-Autonomous",
+      "status": "inactive",
+      "issues": [],
+      "timestamp": "17-10-2024",
+      "vt_box_time": "",
+      "distance": "Nil",
+      "duration": "Nil",
+      "versions": {
+        "VT_BOX Version": "",
+        "VCU Firmware Version": ""
+      }
+    },
+    "MD9GBUE22DC341054": {
+      "vin": "MD9GBUE22DC341054",
+      "nickname": "P3 Vehicle (P4 to P3)",
+      "location": "Not Available",
+      "mode": "Non-Autonomous",
+      "status": "inactive",
+      "issues": [],
+      "timestamp": "23-12-2025",
+      "vt_box_time": "",
+      "distance": "Nil",
+      "duration": "Nil",
+      "versions": {
+        "VT_BOX Version": "",
+        "VCU Firmware Version": ""
+      }
+    },
+    "MD9GBUE28DC341057": {
+      "vin": "MD9GBUE28DC341057",
+      "nickname": "P4 Vehicle",
+      "location": "Not Available",
+      "mode": "Non-Autonomous",
+      "status": "inactive",
+      "issues": [],
+      "timestamp": "11-06-2024",
+      "vt_box_time": "",
+      "distance": "Nil",
+      "duration": "Nil",
+      "versions": {
+        "VT_BOX Version": "1.2.2",
+        "VCU Firmware Version": "2.5.0",
+        "Mew Hardware": "2.2.0",
+        "mew_bootloader": "0.1.2"
+      }
+    },
+    "MD9GBUE23DC341063": {
+      "vin": "MD9GBUE23DC341063",
+      "nickname": "P6 Vehicle",
+      "location": "Yolo\u2013Colusa County, USA",
+      "mode": "Non-Autonomous",
+      "status": "unhealthy",
+      "issues": [
+        "BMS_High_voltage_isolation",
+        "RPDO Timeout"
+      ],
+      "timestamp": "",
+      "vt_box_time": "",
+      "distance": "179.50",
+      "duration": "3 days",
+      "versions": {
+        "VT_BOX Version": "1.2.2",
+        "VCU Firmware Version": "2.3.2"
+      }
+    },
+    "MD9GBUE29DC341066": {
+      "vin": "MD9GBUE29DC341066",
+      "nickname": "P9 Vehicle",
+      "location": "Not Available",
+      "mode": "Non-Autonomous",
+      "status": "inactive",
+      "issues": [],
+      "timestamp": "18.06.2026",
+      "vt_box_time": "",
+      "distance": "Nil",
+      "duration": "Nil",
+      "versions": {
+        "VT_BOX Version": "1.1.7.1",
+        "VCU Firmware Version": "2.2.0"
+      }
+    },
+    "MD9GBUE22DC341068": {
+      "vin": "MD9GBUE22DC341068",
+      "nickname": "P11 Vehicle(IST)",
+      "location": "Zoho Corporation, Tamil Nadu, India",
+      "mode": "Non-Autonomous",
+      "status": "healthy",
+      "issues": [],
+      "timestamp": "",
+      "vt_box_time": "",
+      "distance": "49.70KM",
+      "duration": "12.8 hours",
+      "versions": {
+        "VT_BOX Version": "1.2.2",
+        "VCU Firmware Version": "2.3.0",
+        "Mew Hardware": "2.1.0",
+        "Mew Bootloader": "Nil"
+      }
+    },
+    "MD9GBUE20DC341070": {
+      "vin": "MD9GBUE20DC341070",
+      "nickname": "P13 Vehicle",
+      "location": "Yolo Country, California, U.S",
+      "mode": "Non-Autonomous",
+      "status": "healthy",
+      "issues": [],
+      "timestamp": "",
+      "vt_box_time": "",
+      "distance": "70.53",
+      "duration": "1.12 days",
+      "versions": {
+        "VT_BOX Version": "1.2.2",
+        "VCU Firmware Version": "2.3.2",
+        "Mew Hardware": "2.2.0",
+        "Mew bootloader": "Nil"
+      }
+    },
+    "MD9GBUE22DC341071": {
+      "vin": "MD9GBUE22DC341071",
+      "nickname": "P14 Vehicle",
+      "location": "Tulare County, California, U.S",
+      "mode": "Non-Autonomous",
+      "status": "healthy",
+      "issues": [],
+      "timestamp": "",
+      "vt_box_time": "",
+      "distance": "14.47",
+      "duration": "1.89",
+      "versions": {
+        "VT_BOX Version": "1.2.2",
+        "VCU Firmware Version": "2.3.2",
+        "Mew Hardware": "2.2.0",
+        "Mew Boothloader": "Nil"
+      }
+    },
+    "MD9GBUE28DC341074": {
+      "vin": "MD9GBUE28DC341074",
+      "nickname": "P17 Vehicle",
+      "location": "Mountain View, California, USA",
+      "mode": "Non-Autonomous",
+      "status": "inactive",
+      "issues": [],
+      "timestamp": "02.06.2026",
+      "vt_box_time": "",
+      "distance": "Nil",
+      "duration": "Nil",
+      "versions": {
+        "VT_BOX Version": "1.2.2",
+        "VCU Firmware Version": "2.3.2"
+      }
+    },
+    "MD9GBUE2XDC341075": {
+      "vin": "MD9GBUE2XDC341075",
+      "nickname": "P18 Vehicle",
+      "location": "Zerker Road, Shafter, Kern County, California, United States",
+      "mode": "Non-Autonomous",
+      "status": "mdm_issue",
+      "issues": [],
+      "timestamp": "",
+      "vt_box_time": "10-07-2026",
+      "distance": "Nil",
+      "duration": "15 mins",
+      "versions": {
+        "VT_BOX Version": "1.2.2",
+        "VCU Firmware Version": "2.3.2"
+      }
+    },
+    "MD9GBUE23DC341077": {
+      "vin": "MD9GBUE23DC341077",
+      "nickname": "P20 Vehicle",
+      "location": "Yolo Country, California, U.S",
+      "mode": "Non-Autonomous",
+      "status": "healthy",
+      "issues": [],
+      "timestamp": "",
+      "vt_box_time": "",
+      "distance": "110.60",
+      "duration": "14.6 hours",
+      "versions": {
+        "VT_BOX Version": "1.2.2",
+        "VCU Firmware Version": "2.3.2"
+      }
+    },
+    "MD9GBUE25DC341078": {
+      "vin": "MD9GBUE25DC341078",
+      "nickname": "P21 Vehicle",
+      "location": "University Avenue, University, Riverside County, California, U.S",
+      "mode": "Non-Autonomous",
+      "status": "healthy",
+      "issues": [],
+      "timestamp": "",
+      "vt_box_time": "",
+      "distance": "0.08",
+      "duration": "Nil",
+      "versions": {
+        "VT_BOX Version": "1.2.2",
+        "VCU Firmware Version": "2.3.2"
+      }
+    },
+    "MD9GBUE27DC341079": {
+      "vin": "MD9GBUE27DC341079",
+      "nickname": "P22 Vehicle",
+      "location": "Not Available",
+      "mode": "Non-Autonomous",
+      "status": "inactive",
+      "issues": [],
+      "timestamp": "02-05-2025 21:47:54",
+      "vt_box_time": "",
+      "distance": "Nil",
+      "duration": "Nil",
+      "versions": {
+        "VT_BOX Version": "",
+        "VCU Firmware Version": ""
+      }
+    },
+    "MD9GBUE23DC341080": {
+      "vin": "MD9GBUE23DC341080",
+      "nickname": "P23 Vehicle",
+      "location": "Hidalgo County, Texas, 78549, United States",
+      "mode": "Non-Autonomous",
+      "status": "healthy",
+      "issues": [],
+      "timestamp": "",
+      "vt_box_time": "",
+      "distance": "67.75",
+      "duration": "1.07",
+      "versions": {
+        "VT_BOX Version": "1.2.2",
+        "VCU Firmware Version": "2.3.0",
+        "Mew Hardware": "2.2.0",
+        "Mew Bootloader": "0.1.2"
+      }
+    },
+    "MD9GBUE27DC341082": {
+      "vin": "MD9GBUE27DC341082",
+      "nickname": "P25 Vehicle",
+      "location": "Near Greenville, Hunt County, Texas, USA",
+      "mode": "Non-Autonomous",
+      "status": "inactive",
+      "issues": [],
+      "timestamp": "25-06-2026",
+      "vt_box_time": "",
+      "distance": "Nil",
+      "duration": "Nil",
+      "versions": {
+        "VT_BOX Version": "1.2.2",
+        "VCU Firmware Version": "2.3.2"
+      }
+    },
+    "MD9GBUE2XFC341001": {
+      "vin": "MD9GBUE2XFC341001",
+      "nickname": "P26 Vehicle",
+      "location": "Fresno Avenue, Shafter, Kern County, California, USA",
+      "mode": "Non-Autonomous",
+      "status": "inactive",
+      "issues": [],
+      "timestamp": "23.02.2026",
+      "vt_box_time": "",
+      "distance": "Nil",
+      "duration": "Nil",
+      "versions": {
+        "VT_BOX Version": "1.1.8.1",
+        "VCU Firmware Version": "2.3.0"
+      }
+    },
+    "MD9GBUE21FC341002": {
+      "vin": "MD9GBUE21FC341002",
+      "nickname": "P27 Vehicle",
+      "location": "Elk Grove High School, Fontana Court, Sacramento County, California, U.S",
+      "mode": "Non-Autonomous",
+      "status": "inactive",
+      "issues": [],
+      "timestamp": "04.06.2026",
+      "vt_box_time": "",
+      "distance": "Nil",
+      "duration": "Nil",
+      "versions": {
+        "VT_BOX Version": "1.2.2",
+        "VCU Firmware Version": "2.3.2"
+      }
+    },
+    "MD9GBUE23FC341003": {
+      "vin": "MD9GBUE23FC341003",
+      "nickname": "P28 Vehicle",
+      "location": "Rio Arriba County, New Mexico, U.S",
+      "mode": "Non-Autonomous",
+      "status": "inactive",
+      "issues": [],
+      "timestamp": "27.06.2026",
+      "vt_box_time": "",
+      "distance": "Nil",
+      "duration": "Nil",
+      "versions": {
+        "VT_BOX Version": "1.1.8_1",
+        "VCU Firmware Version": "2.3.2"
+      }
+    },
+    "MD9GBUE25FC341004": {
+      "vin": "MD9GBUE25FC341004",
+      "nickname": "P29 Vehicle",
+      "location": "Batesville, Zavala County, Texas, United States",
+      "mode": "Non-Autonomous",
+      "status": "healthy",
+      "issues": [],
+      "timestamp": "",
+      "vt_box_time": "",
+      "distance": "86.35",
+      "duration": "23.6 hours",
+      "versions": {
+        "VT_BOX Version": "1.2.2",
+        "VCU Firmware Version": "2.2.0",
+        "VIN_Number": "Missing",
+        "Mem Harware": "2.20",
+        "Mew Bootloader": "0.1.2"
+      }
+    },
+    "MD9GBUE27FC341005": {
+      "vin": "MD9GBUE27FC341005",
+      "nickname": "P30 Vehicle",
+      "location": "Mockingbird Hill, Calaveras County, California, U.S",
+      "mode": "Non-Autonomous",
+      "status": "unhealthy",
+      "issues": [
+        "High_voltage_isolation_voltage"
+      ],
+      "timestamp": "",
+      "vt_box_time": "",
+      "distance": "9.35KM",
+      "duration": "9.32 mins",
+      "versions": {
+        "VT_BOX Version": "1.2.2",
+        "VCU Firmware Version": "2.2.0",
+        "MC2 Firmware": "Nil",
+        "mew_bootloader_firmware_version": "Nil"
+      }
+    },
+    "MD9GBUE29FC341006": {
+      "vin": "MD9GBUE29FC341006",
+      "nickname": "P31 Vehicle",
+      "location": "You Bet, Nevada County, California, U.S",
+      "mode": "Non-Autonomous",
+      "status": "inactive",
+      "issues": [],
+      "timestamp": "14-06-2026",
+      "vt_box_time": "",
+      "distance": "Nil",
+      "duration": "Nil",
+      "versions": {
+        "VT_BOX Version": "1.1.8.1",
+        "VCU Firmware Version": "2.3.2"
+      }
+    },
+    "MD9GBUE20FC341007": {
+      "vin": "MD9GBUE20FC341007",
+      "nickname": "P32 Vehicle",
+      "location": "County Road 1005B, Batesville, Zavala County, Texas, United States",
+      "mode": "Non-Autonomous",
+      "status": "healthy",
+      "issues": [],
+      "timestamp": "",
+      "vt_box_time": "",
+      "distance": "66.61",
+      "duration": "1.07 days",
+      "versions": {
+        "VT_BOX Version": "1.2.2",
+        "VCU Firmware Version": "2.2.0",
+        "VIN_Number": "Nil",
+        "Mew Hardware": "2.2.0",
+        "Mew_Bootloader": "0.1.2"
+      }
+    },
+    "MD9GBUE22FC341008": {
+      "vin": "MD9GBUE22FC341008",
+      "nickname": "P33 Vehicle",
+      "location": "Batesville, Zavala County, Texas, 78829, United States",
+      "mode": "Non-Autonomous",
+      "status": "inactive",
+      "issues": [],
+      "timestamp": "28.04.2026",
+      "vt_box_time": "",
+      "distance": "Nil",
+      "duration": "Nil",
+      "versions": {
+        "VT_BOX Version": "1.1.8_1",
+        "VCU Firmware Version": "2.2.0"
+      }
+    },
+    "MD9GBUE24FC341009": {
+      "vin": "MD9GBUE24FC341009",
+      "nickname": "P34 Vehicle",
+      "location": "Avenue, Bakersfield, Kern County, California, United States",
+      "mode": "Non-Autonomous",
+      "status": "inactive",
+      "issues": [],
+      "timestamp": "28-04-2026",
+      "vt_box_time": "",
+      "distance": "Nil",
+      "duration": "Nil",
+      "versions": {
+        "VT_BOX Version": "1.1.8_1",
+        "VCU Firmware Version": "2.2.0",
+        "Mew Hardware": "2.2.0",
+        "Mew_bootloader": "0.1.2"
+      }
+    },
+    "MD9GBUE20FC341010": {
+      "vin": "MD9GBUE20FC341010",
+      "nickname": "P35 Vehicle",
+      "location": "East North Avenue, Fresno County, California, United States",
+      "mode": "Non-Autonomous",
+      "status": "healthy",
+      "issues": [],
+      "timestamp": "",
+      "vt_box_time": "",
+      "distance": "24.27",
+      "duration": "7.81 mins",
+      "versions": {
+        "VT_BOX Version": "1.2.2",
+        "VCU Firmware Version": "2.3.2",
+        "Mew Hardware": "2.2.0",
+        "mew_bootloader": "0.1.2",
+        "VIN_Number": "missing"
+      }
+    },
+    "MD9GBUE22FC341011": {
+      "vin": "MD9GBUE22FC341011",
+      "nickname": "P36 Vehicle",
+      "location": "San Francisco Peninsula, California, USA",
+      "mode": "Non-Autonomous",
+      "status": "inactive",
+      "issues": [],
+      "timestamp": "09-12-2025",
+      "vt_box_time": "",
+      "distance": "Nil",
+      "duration": "Nil",
+      "versions": {
+        "VT_BOX Version": "1.1.8_1",
+        "VCU Firmware Version": "2.3.2",
+        "Mew Hardware": "2.2.0",
+        "Mew Bootloader": "0.1.2"
+      }
+    },
+    "MD9GBUE24FC341012": {
+      "vin": "MD9GBUE24FC341012",
+      "nickname": "P37 Vehicle",
+      "location": "Alvarado High School, South Parkway Drive, Alvarado, Johnson County, Texas, United States",
+      "mode": "Non-Autonomous",
+      "status": "healthy",
+      "issues": [],
+      "timestamp": "",
+      "vt_box_time": "",
+      "distance": "22.22",
+      "duration": "20 Hours",
+      "versions": {
+        "VT_BOX Version": "1.2.2",
+        "VCU Firmware Version": "2.2.0",
+        "Mew Hardware": "2.2.0",
+        "Mew Bootloader": "0.1.2"
+      }
+    },
+    "MD9GBUE26FC341013": {
+      "vin": "MD9GBUE26FC341013",
+      "nickname": "P38 Vehicle",
+      "location": "San Joaquin Valley, Central California, USA",
+      "mode": "Non-Autonomous",
+      "status": "healthy",
+      "issues": [],
+      "timestamp": "",
+      "vt_box_time": "",
+      "distance": "114.25",
+      "duration": "10.4 hours",
+      "versions": {
+        "VT_BOX Version": "1.2.2",
+        "VCU Firmware Version": "2.2.0",
+        "Mew Hardware": "2.2.0",
+        "Mew Bootloader": "0.1.2"
+      }
+    },
+    "MD9GBUE28FC341014": {
+      "vin": "MD9GBUE28FC341014",
+      "nickname": "P39 Vehicle",
+      "location": "Batesville, Zavala County, Texas, United States",
+      "mode": "Non-Autonomous",
+      "status": "inactive",
+      "issues": [],
+      "timestamp": "19-03-2026",
+      "vt_box_time": "",
+      "distance": "Nil",
+      "duration": "Nil",
+      "versions": {
+        "VT_BOX Version": "1.1.8_1",
+        "VCU Firmware Version": "2.2.0",
+        "Mew Hardware": "2.2.0",
+        "Mew Bootloader": "0.1.2"
+      }
+    },
+    "MD9GBUE2XFC341015": {
+      "vin": "MD9GBUE2XFC341015",
+      "nickname": "P40 Vehicle",
+      "location": "Lamb County, Texas, United States",
+      "mode": "Non-Autonomous",
+      "status": "unhealthy",
+      "issues": [
+        "so many default values",
+        "high_voltage_isolation_faults",
+        "DCDC_faults"
+      ],
+      "timestamp": "",
+      "vt_box_time": "",
+      "distance": "534.08",
+      "duration": "1.90 days",
+      "versions": {
+        "VT_BOX Version": "1.2.2",
+        "VCU Firmware Version": "2.2.0",
+        "Mew Hardware": "2.2.0",
+        "Mew boothloader": "Nil"
+      }
+    },
+    "MD9GBUE21FC341016": {
+      "vin": "MD9GBUE21FC341016",
+      "nickname": "P41 Vehicle",
+      "location": "Bonney Road, Monterey County, California, U.S",
+      "mode": "Non-Autonomous",
+      "status": "healthy",
+      "issues": [],
+      "timestamp": "",
+      "vt_box_time": "",
+      "distance": "121.50",
+      "duration": "9.46 hours",
+      "versions": {
+        "VT_BOX Version": "1.2.2",
+        "VCU Firmware Version": "2.2.0",
+        "VCU Hardware": "2.2.0",
+        "Mew_Bootloader": "0.1.2"
+      }
+    },
+    "MD9GBUE23FC341017": {
+      "vin": "MD9GBUE23FC341017",
+      "nickname": "P42 Vehicle",
+      "location": "East American Avenue, Fresno County, California, U.S",
+      "mode": "Non-Autonomous",
+      "status": "inactive",
+      "issues": [],
+      "timestamp": "17-12-2025",
+      "vt_box_time": "",
+      "distance": "Nil",
+      "duration": "Nil",
+      "versions": {
+        "VT_BOX Version": "1.1.8_1",
+        "VCU Firmware Version": "2.3.2",
+        "Mew Hardware": "2.2.0",
+        "Mew Bootloader": "0.1.2"
+      }
+    },
+    "MD9GBUE27FC341019": {
+      "vin": "MD9GBUE27FC341019",
+      "nickname": "P44 Vehicle",
+      "location": "Silver Creek, U.S Office",
+      "mode": "Non-Autonomous",
+      "status": "healthy",
+      "issues": [],
+      "timestamp": "",
+      "vt_box_time": "",
+      "distance": "10.33",
+      "duration": "7.78 mins",
+      "versions": {
+        "VT_BOX Version": "1.2.2",
+        "VCU Firmware Version": "2.3.2",
+        "Mew Hardware": "2.2.0",
+        "Mew Bootloader": "0.1.2"
+      }
+    },
+    "MD9GBUE23FC341020": {
+      "vin": "MD9GBUE23FC341020",
+      "nickname": "P45 Vehicle",
+      "location": "Silver Creek, U.S Office",
+      "mode": "Non-Autonomous",
+      "status": "inactive",
+      "issues": [],
+      "timestamp": "VT_Box Came online 25-06-2026",
+      "vt_box_time": "",
+      "distance": "Nil",
+      "duration": "Nil",
+      "versions": {
+        "VT_BOX Version": "1.2.2",
+        "VCU Firmware Version": "2.2.0",
+        "Mew Hardware": "2.2.0",
+        "Mew Bootloader": "0.1.2"
+      }
+    },
+    "MD9GBUE25FC341021": {
+      "vin": "MD9GBUE25FC341021",
+      "nickname": "P46 Vehicle",
+      "location": "Five Corners, San Joaquin County, California, U.S",
+      "mode": "Non-Autonomous",
+      "status": "healthy",
+      "issues": [],
+      "timestamp": "",
+      "vt_box_time": "",
+      "distance": "75.93",
+      "duration": "18.5 hours",
+      "versions": {
+        "VT_BOX Version": "1.2.2",
+        "VCU Firmware Version": "2.3.2",
+        "Mew Hardware": "2.2.0",
+        "Mew Bootloader": "0.1.2"
+      }
+    },
+    "MD9GBUE27FC341022": {
+      "vin": "MD9GBUE27FC341022",
+      "nickname": "P47 Vehicle",
+      "location": "Not Available",
+      "mode": "Non-Autonomous",
+      "status": "mdm_issue",
+      "issues": [],
+      "timestamp": "",
+      "vt_box_time": "MDM online on this 17.02.2026 but no data",
+      "distance": "Nil",
+      "duration": "15 mins",
+      "versions": {
+        "VT_BOX Version": "",
+        "VCU Firmware Version": ""
+      }
+    },
+    "MD9GBUE29FC341023": {
+      "vin": "MD9GBUE29FC341023",
+      "nickname": "P48 Vehicle",
+      "location": "San Francisco Bay Area in California, USA",
+      "mode": "Non-Autonomous",
+      "status": "inactive",
+      "issues": [],
+      "timestamp": "19-12-2025",
+      "vt_box_time": "",
+      "distance": "Nil",
+      "duration": "Nil",
+      "versions": {
+        "VT_BOX Version": "1.1.8_1",
+        "VCU Firmware Version": "2.2.0",
+        "Mew Hardware": "2.2.0",
+        "Mew Bootloader": "0.1.2"
+      }
+    },
+    "MD9GBUE2XFC341029": {
+      "vin": "MD9GBUE2XFC341029",
+      "nickname": "P54 Vehicle",
+      "location": "Silver Creek, U.S",
+      "mode": "Non-Autonomous",
+      "status": "unhealthy",
+      "issues": [
+        "MDM data missing on 16/07/2026",
+        "BMS_DCL_reduced_due_to_low_soc on 15& 17 July"
+      ],
+      "timestamp": "",
+      "vt_box_time": "",
+      "distance": "223.10",
+      "duration": "18.2",
+      "versions": {
+        "VT_BOX Version": "1.2.2",
+        "VCU Firmware Version": "2.3.1",
+        "Operation_mode": "Torque",
+        "Mew Hardware": "2.20",
+        "Mew Bootloader": "0.1.2"
+      }
+    },
+    "MD9GBUE26FC341030": {
+      "vin": "MD9GBUE26FC341030",
+      "nickname": "P55 Vehicle",
+      "location": "Siilver Creek, U.S OFFICE",
+      "mode": "Non-Autonomous",
+      "status": "unhealthy",
+      "issues": [
+        "Motor Overspeed Fault",
+        "DSP Control Fault",
+        "DSP Encoder Fault",
+        "BMS_chrg_limit_enforcement_fault",
+        "BMS_DCL_reduced_due_to_temp",
+        "BMS_CCL_reduced_due_to_temp",
+        "MDM data did not come on 15.07.2026"
+      ],
+      "timestamp": "",
+      "vt_box_time": "",
+      "distance": "134.63",
+      "duration": "1.16 days",
+      "versions": {
+        "VT_BOX Version": "1.2.2",
+        "VCU Firmware Version": "2.3.1",
+        "Mew Hardware": "2.20",
+        "Mew Bootloader": "2.0.0"
+      }
+    },
+    "MD9GBUE28FC341031": {
+      "vin": "MD9GBUE28FC341031",
+      "nickname": "P56 Vehicle",
+      "location": "Silver Creek, U.S OFFICE",
+      "mode": "Non-Autonomous",
+      "status": "unhealthy",
+      "issues": [
+        "Auxilary_battery_voltage on 9th & 10th",
+        "MDM online but no data on 12th July"
+      ],
+      "timestamp": "",
+      "vt_box_time": "",
+      "distance": "55.48",
+      "duration": "1.25 hours",
+      "versions": {
+        "VT_BOX Version": "1.2.2",
+        "VCU Firmware Version": "2.3.1",
+        "Mew Hardware": "2.2.0",
+        "Mew Bootloader": "0.1.2",
+        "Operation mode": "Torque"
+      }
+    },
+    "MD9GBUE2XFC341032": {
+      "vin": "MD9GBUE2XFC341032",
+      "nickname": "P57 Vehicle",
+      "location": "Silver Creek, U.S OFFICE",
+      "mode": "Non-Autonomous",
+      "status": "unhealthy",
+      "issues": [
+        "MDM data missing on 12th July",
+        "BMS_DCL_reduced_due_to_low_soc"
+      ],
+      "timestamp": "",
+      "vt_box_time": "",
+      "distance": "24.50",
+      "duration": "1.56 days",
+      "versions": {
+        "VT_BOX Version": "1.2.2",
+        "VCU Firmware Version": "2.3.1",
+        "Mew Hardware": "2.2.0",
+        "Mew Bootloader": "2.0.0",
+        "Operation mode": "Torque"
+      }
+    },
+    "MD9GBUE21FC341033": {
+      "vin": "MD9GBUE21FC341033",
+      "nickname": "P58 Vehicle",
+      "location": "Silver Creek, U.S Office",
+      "mode": "Non-Autonomous",
+      "status": "unhealthy",
+      "issues": [
+        "MDM is on but no data on 14.07.2026"
+      ],
+      "timestamp": "",
+      "vt_box_time": "",
+      "distance": "33.36",
+      "duration": "19.2 hours",
+      "versions": {
+        "VT_BOX Version": "1.2.2",
+        "VCU Firmware": "2.3.1",
+        "Mew Hardware": "2.2.0",
+        "Mew Bootloader": "0.1.2",
+        "Operation mode": "Torque"
+      }
+    },
+    "MD9GBUE23FC341034": {
+      "vin": "MD9GBUE23FC341034",
+      "nickname": "P59 Vehicle",
+      "location": "Silver Creek, U.S OFFICE",
+      "mode": "Non-Autonomous",
+      "status": "healthy",
+      "issues": [],
+      "timestamp": "",
+      "vt_box_time": "",
+      "distance": "16.86",
+      "duration": "2.58 days",
+      "versions": {
+        "VT_BOX Version": "1.2.2",
+        "VCU Firmware Version": "2.3.1",
+        "Mew Hardware": "2.2.0",
+        "mew Bootloader": "0.1.2",
+        "Operation mode": "Torque"
+      }
+    },
+    "MD9GBUE26DC341039": {
+      "vin": "MD9GBUE26DC341039",
+      "nickname": "T10 Vehicle",
+      "location": "Hargill, Hidalgo County, Texas, U.S",
+      "mode": "Non-Autonomous",
+      "status": "unhealthy",
+      "issues": [
+        "auxilary_battery_voltage",
+        "high_voltage_isolation_fault"
+      ],
+      "timestamp": "",
+      "vt_box_time": "",
+      "distance": "96.94",
+      "duration": "1.52 days",
+      "versions": {
+        "VT_BOX Version": "1.2.2",
+        "VCU Firmware Version": "2.2.0",
+        "Mew Hardware": "2.1.0"
+      }
+    },
+    "MD9GBUE26DC341042": {
+      "vin": "MD9GBUE26DC341042",
+      "nickname": "T11 Vehicle",
+      "location": "Travis County, Texas, United States",
+      "mode": "Non-Autonomous",
+      "status": "unhealthy",
+      "issues": [
+        "No Version details"
+      ],
+      "timestamp": "",
+      "vt_box_time": "",
+      "distance": "86.59",
+      "duration": "1.70 days",
+      "versions": {
+        "VT_BOX Version": "Nil",
+        "VCU Firmware Version": "Nil"
+      }
+    },
+    "MD9GBUE20FC341024": {
+      "vin": "MD9GBUE20FC341024",
+      "nickname": "P49 Vehicle",
+      "location": "Batesville, Zavala County, Texas, United States",
+      "mode": "Non-Autonomous",
+      "status": "healthy",
+      "issues": [],
+      "timestamp": "",
+      "vt_box_time": "",
+      "distance": "11.99",
+      "duration": "1.07 days",
+      "versions": {
+        "VT_BOX Version": "1.2.2",
+        "VCU Firmware Version": "2.2.0",
+        "Mew hardware": "2.2.0",
+        "Mew Bootloader": "0.1.2"
+      }
+    },
+    "MD9GBUE22DC341006": {
+      "vin": "MD9GBUE22DC341006",
+      "nickname": "US HC Yuba",
+      "location": "McCauley Estate Vineyards, Sunset Road, Brentwood, Contra Costa County, California, United States",
+      "mode": "Autonomous",
+      "status": "unhealthy",
+      "issues": [
+        "Only BMS Data coming"
+      ],
+      "timestamp": "",
+      "vt_box_time": "",
+      "distance": "NIL",
+      "duration": "2.56 hours",
+      "versions": {
+        "VT_BOX Version": "",
+        "VCU Firmware Version": ""
+      }
+    },
+    "MD9GBUE27DC341003": {
+      "vin": "MD9GBUE27DC341003",
+      "nickname": "US HC Fargo",
+      "location": "Not Available",
+      "mode": "Autonomous",
+      "status": "inactive",
+      "issues": [],
+      "timestamp": "12-09-2024",
+      "vt_box_time": "",
+      "distance": "Nil",
+      "duration": "Nil",
+      "versions": {
+        "VT_BOX Version": "",
+        "VCU Firmware Version": ""
+      }
+    },
+    "MD9GBUE27DC341048": {
+      "vin": "MD9GBUE27DC341048",
+      "nickname": "P1 Vehicle",
+      "location": "Nil",
+      "mode": "Autonomous",
+      "status": "inactive",
+      "issues": [],
+      "timestamp": "10-03-2026",
+      "vt_box_time": "",
+      "distance": "Nil",
+      "duration": "Nil",
+      "versions": {
+        "VT_BOX Version": "HMI",
+        "VCU Firmware Version": "1.0.0",
+        "Mew Hardware": "2.2.0",
+        "Mew Bootloader": "0.1.2"
+      }
+    },
+    "MD9GBUE24DC341069": {
+      "vin": "MD9GBUE24DC341069",
+      "nickname": "P12 Vehicle",
+      "location": "Ignatius Drive, Richwoods, Frisco, Collin County, Texas, United States",
+      "mode": "Autonomous",
+      "status": "healthy",
+      "issues": [],
+      "timestamp": "",
+      "vt_box_time": "",
+      "distance": "0.9",
+      "duration": "1 day 2 hours 31 min",
+      "versions": {
+        "VT_BOX Version": "1.2.2",
+        "VCU Firmware Version": "2.3.0",
+        "Mew Hardware": "2.2.0",
+        "Mew bootloader": "Nil"
+      }
+    },
+    "MD9GBUE25DC341033": {
+      "vin": "MD9GBUE25DC341033",
+      "nickname": "T6 Vehicle",
+      "location": "Hargill, Hidalgo County, Texa, U.S",
+      "mode": "Autonomous",
+      "status": "unhealthy",
+      "issues": [
+        "RPDO Timeout (drive inhibit)"
+      ],
+      "timestamp": "",
+      "vt_box_time": "",
+      "distance": "63.50",
+      "duration": "23.2 hours",
+      "versions": {
+        "VT_BOX Version": "HMI",
+        "VCU Firmware Version": "2.3.0",
+        "Mew Hardware": "2.2.0",
+        "Mew Bootloader": "0.1.2"
+      }
+    },
+    "MD9GBUE28FC341028": {
+      "vin": "MD9GBUE28FC341028",
+      "nickname": "P53 Vehicle",
+      "location": "IST",
+      "mode": "Autonomous",
+      "status": "unhealthy",
+      "issues": [
+        "auxilary_battery_voltage"
+      ],
+      "timestamp": "",
+      "vt_box_time": "",
+      "distance": "3.65KM",
+      "duration": "7.77 hours",
+      "versions": {
+        "VT_BOX Version": "2.3.0",
+        "VCU Firmware Version": "2.2.0",
+        "Mew hardware": "2.2.0",
+        "Mew Bootloader": "0.1.2"
+      }
+    }
+  }
 }
   </script>
 
