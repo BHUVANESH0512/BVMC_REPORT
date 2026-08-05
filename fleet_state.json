@@ -1,5 +1,5 @@
 {
-  "global_duration": "08-07-2026 to 19-07-2026",
+  "global_duration": "01-07-2026 to 31-07-2026",
   "vehicles": {
     "MD9GBUE28DC341009": {
       "vin": "MD9GBUE28DC341009",
@@ -75,12 +75,12 @@
       "status": "unhealthy",
       "issues": [
         "BMS_High_voltage_isolation",
-        "RPDO Timeout"
+        "RPDO Timeout on 15th & 16th"
       ],
       "timestamp": "",
       "vt_box_time": "",
-      "distance": "179.50",
-      "duration": "3 days",
+      "distance": "222.39KM",
+      "duration": "1 week",
       "versions": {
         "VT_BOX Version": "1.2.2",
         "VCU Firmware Version": "2.3.2"
@@ -107,12 +107,14 @@
       "nickname": "P11 Vehicle(IST)",
       "location": "Zoho Corporation, Tamil Nadu, India",
       "mode": "Non-Autonomous",
-      "status": "healthy",
-      "issues": [],
+      "status": "unhealthy",
+      "issues": [
+        "SinCos Tracking Warning on 03rd"
+      ],
       "timestamp": "",
       "vt_box_time": "",
-      "distance": "49.70KM",
-      "duration": "12.8 hours",
+      "distance": "119.01",
+      "duration": "2.14 days",
       "versions": {
         "VT_BOX Version": "1.2.2",
         "VCU Firmware Version": "2.3.0",
@@ -125,12 +127,14 @@
       "nickname": "P13 Vehicle",
       "location": "Yolo Country, California, U.S",
       "mode": "Non-Autonomous",
-      "status": "healthy",
-      "issues": [],
+      "status": "unhealthy",
+      "issues": [
+        "BMS_open_wiring_fault on 26th & 27th"
+      ],
       "timestamp": "",
       "vt_box_time": "",
-      "distance": "70.53",
-      "duration": "1.12 days",
+      "distance": "215.81",
+      "duration": "5.19 days",
       "versions": {
         "VT_BOX Version": "1.2.2",
         "VCU Firmware Version": "2.3.2",
@@ -147,8 +151,8 @@
       "issues": [],
       "timestamp": "",
       "vt_box_time": "",
-      "distance": "14.47",
-      "duration": "1.89",
+      "distance": "55.15",
+      "duration": "10.6 hours",
       "versions": {
         "VT_BOX Version": "1.2.2",
         "VCU Firmware Version": "2.3.2",
@@ -161,12 +165,12 @@
       "nickname": "P17 Vehicle",
       "location": "Mountain View, California, USA",
       "mode": "Non-Autonomous",
-      "status": "inactive",
+      "status": "healthy",
       "issues": [],
-      "timestamp": "02.06.2026",
+      "timestamp": "",
       "vt_box_time": "",
-      "distance": "Nil",
-      "duration": "Nil",
+      "distance": "2.23",
+      "duration": "36.1 min",
       "versions": {
         "VT_BOX Version": "1.2.2",
         "VCU Firmware Version": "2.3.2"
@@ -180,7 +184,7 @@
       "status": "mdm_issue",
       "issues": [],
       "timestamp": "",
-      "vt_box_time": "10-07-2026",
+      "vt_box_time": "29-07-2026",
       "distance": "Nil",
       "duration": "15 mins",
       "versions": {
@@ -197,8 +201,8 @@
       "issues": [],
       "timestamp": "",
       "vt_box_time": "",
-      "distance": "110.60",
-      "duration": "14.6 hours",
+      "distance": "294.24",
+      "duration": "3.42 days",
       "versions": {
         "VT_BOX Version": "1.2.2",
         "VCU Firmware Version": "2.3.2"
@@ -213,8 +217,8 @@
       "issues": [],
       "timestamp": "",
       "vt_box_time": "",
-      "distance": "0.08",
-      "duration": "Nil",
+      "distance": "25.27",
+      "duration": "2.13 hours",
       "versions": {
         "VT_BOX Version": "1.2.2",
         "VCU Firmware Version": "2.3.2"
@@ -241,12 +245,14 @@
       "nickname": "P23 Vehicle",
       "location": "Hidalgo County, Texas, 78549, United States",
       "mode": "Non-Autonomous",
-      "status": "healthy",
-      "issues": [],
+      "status": "unhealthy",
+      "issues": [
+        "high_voltage_isolation_fault"
+      ],
       "timestamp": "",
       "vt_box_time": "",
-      "distance": "67.75",
-      "duration": "1.07",
+      "distance": "194.11",
+      "duration": "1.29 weeks",
       "versions": {
         "VT_BOX Version": "1.2.2",
         "VCU Firmware Version": "2.3.0",
@@ -259,12 +265,12 @@
       "nickname": "P25 Vehicle",
       "location": "Near Greenville, Hunt County, Texas, USA",
       "mode": "Non-Autonomous",
-      "status": "inactive",
+      "status": "mdm_issue",
       "issues": [],
-      "timestamp": "25-06-2026",
-      "vt_box_time": "",
+      "timestamp": "",
+      "vt_box_time": "Location data came on 28-07-2026",
       "distance": "Nil",
-      "duration": "Nil",
+      "duration": "2 mins",
       "versions": {
         "VT_BOX Version": "1.2.2",
         "VCU Firmware Version": "2.3.2"
@@ -291,12 +297,12 @@
       "nickname": "P27 Vehicle",
       "location": "Elk Grove High School, Fontana Court, Sacramento County, California, U.S",
       "mode": "Non-Autonomous",
-      "status": "inactive",
+      "status": "healthy",
       "issues": [],
-      "timestamp": "04.06.2026",
+      "timestamp": "",
       "vt_box_time": "",
-      "distance": "Nil",
-      "duration": "Nil",
+      "distance": "46.14",
+      "duration": "1.10 day",
       "versions": {
         "VT_BOX Version": "1.2.2",
         "VCU Firmware Version": "2.3.2"
@@ -323,12 +329,15 @@
       "nickname": "P29 Vehicle",
       "location": "Batesville, Zavala County, Texas, United States",
       "mode": "Non-Autonomous",
-      "status": "healthy",
-      "issues": [],
+      "status": "unhealthy",
+      "issues": [
+        "epas level 3 on 10th time 15:00:00",
+        "epas level 2 on 10th time 17:00:00"
+      ],
       "timestamp": "",
       "vt_box_time": "",
-      "distance": "86.35",
-      "duration": "23.6 hours",
+      "distance": "294.25",
+      "duration": "4.38 days",
       "versions": {
         "VT_BOX Version": "1.2.2",
         "VCU Firmware Version": "2.2.0",
@@ -344,17 +353,18 @@
       "mode": "Non-Autonomous",
       "status": "unhealthy",
       "issues": [
-        "High_voltage_isolation_voltage"
+        "High_voltage_isolation_voltage",
+        "High Capacitor Cut"
       ],
       "timestamp": "",
       "vt_box_time": "",
-      "distance": "9.35KM",
-      "duration": "9.32 mins",
+      "distance": "35.93",
+      "duration": "7.62 hours",
       "versions": {
         "VT_BOX Version": "1.2.2",
         "VCU Firmware Version": "2.2.0",
         "MC2 Firmware": "Nil",
-        "mew_bootloader_firmware_version": "Nil"
+        "mew_bootloader_firmware_version": "0.1.2"
       }
     },
     "MD9GBUE29FC341006": {
@@ -378,12 +388,19 @@
       "nickname": "P32 Vehicle",
       "location": "County Road 1005B, Batesville, Zavala County, Texas, United States",
       "mode": "Non-Autonomous",
-      "status": "healthy",
-      "issues": [],
+      "status": "unhealthy",
+      "issues": [
+        "DSP Overcurrent Fault on 21th & 22nd",
+        "DSP Power frame fault on 22nd & 25th",
+        "DSP Encoder Fault on 24th & 28th",
+        "RPDO Timeout on 01th & 28th",
+        "DSP Control Fault on 25th",
+        "fault enumeration level 3 on 10th"
+      ],
       "timestamp": "",
       "vt_box_time": "",
-      "distance": "66.61",
-      "duration": "1.07 days",
+      "distance": "294.39",
+      "duration": "4.16 days",
       "versions": {
         "VT_BOX Version": "1.2.2",
         "VCU Firmware Version": "2.2.0",
@@ -435,8 +452,8 @@
       "issues": [],
       "timestamp": "",
       "vt_box_time": "",
-      "distance": "24.27",
-      "duration": "7.81 mins",
+      "distance": "59.12",
+      "duration": "10.2 hours",
       "versions": {
         "VT_BOX Version": "1.2.2",
         "VCU Firmware Version": "2.3.2",
@@ -468,12 +485,14 @@
       "nickname": "P37 Vehicle",
       "location": "Alvarado High School, South Parkway Drive, Alvarado, Johnson County, Texas, United States",
       "mode": "Non-Autonomous",
-      "status": "healthy",
-      "issues": [],
+      "status": "unhealthy",
+      "issues": [
+        "Epas Level - 2 on 17th"
+      ],
       "timestamp": "",
       "vt_box_time": "",
-      "distance": "22.22",
-      "duration": "20 Hours",
+      "distance": "73.25",
+      "duration": "2.63 days",
       "versions": {
         "VT_BOX Version": "1.2.2",
         "VCU Firmware Version": "2.2.0",
@@ -486,12 +505,15 @@
       "nickname": "P38 Vehicle",
       "location": "San Joaquin Valley, Central California, USA",
       "mode": "Non-Autonomous",
-      "status": "healthy",
-      "issues": [],
+      "status": "unhealthy",
+      "issues": [
+        "Epas level 1 on 7th, 12th, 17th & 27th",
+        "Epas level 2 on 30th"
+      ],
       "timestamp": "",
       "vt_box_time": "",
-      "distance": "114.25",
-      "duration": "10.4 hours",
+      "distance": "258.84",
+      "duration": "3.66 days",
       "versions": {
         "VT_BOX Version": "1.2.2",
         "VCU Firmware Version": "2.2.0",
@@ -504,14 +526,14 @@
       "nickname": "P39 Vehicle",
       "location": "Batesville, Zavala County, Texas, United States",
       "mode": "Non-Autonomous",
-      "status": "inactive",
+      "status": "healthy",
       "issues": [],
-      "timestamp": "19-03-2026",
+      "timestamp": "",
       "vt_box_time": "",
-      "distance": "Nil",
-      "duration": "Nil",
+      "distance": "7.20",
+      "duration": "2 days",
       "versions": {
-        "VT_BOX Version": "1.1.8_1",
+        "VT_BOX Version": "1.2.2",
         "VCU Firmware Version": "2.2.0",
         "Mew Hardware": "2.2.0",
         "Mew Bootloader": "0.1.2"
@@ -526,12 +548,13 @@
       "issues": [
         "so many default values",
         "high_voltage_isolation_faults",
-        "DCDC_faults"
+        "DCDC_faults",
+        "Epas faults also"
       ],
       "timestamp": "",
       "vt_box_time": "",
-      "distance": "534.08",
-      "duration": "1.90 days",
+      "distance": "1353.29",
+      "duration": "2.20 weeks",
       "versions": {
         "VT_BOX Version": "1.2.2",
         "VCU Firmware Version": "2.2.0",
@@ -544,12 +567,15 @@
       "nickname": "P41 Vehicle",
       "location": "Bonney Road, Monterey County, California, U.S",
       "mode": "Non-Autonomous",
-      "status": "healthy",
-      "issues": [],
+      "status": "unhealthy",
+      "issues": [
+        "Motor in thermal cutback on 22nd",
+        "EPAS Level 2 & Level 3 Faults:  03-Jul07:20:00, 09-Jul 08:40:00, 09-Jul 12:40:00, 13-Jul 13:20:00, 17-Jul 09:40:00"
+      ],
       "timestamp": "",
       "vt_box_time": "",
-      "distance": "121.50",
-      "duration": "9.46 hours",
+      "distance": "344.23",
+      "duration": "1.09 week",
       "versions": {
         "VT_BOX Version": "1.2.2",
         "VCU Firmware Version": "2.2.0",
@@ -584,8 +610,8 @@
       "issues": [],
       "timestamp": "",
       "vt_box_time": "",
-      "distance": "10.33",
-      "duration": "7.78 mins",
+      "distance": "28.05",
+      "duration": "6.01 hours",
       "versions": {
         "VT_BOX Version": "1.2.2",
         "VCU Firmware Version": "2.3.2",
@@ -598,12 +624,14 @@
       "nickname": "P45 Vehicle",
       "location": "Silver Creek, U.S Office",
       "mode": "Non-Autonomous",
-      "status": "inactive",
-      "issues": [],
-      "timestamp": "VT_Box Came online 25-06-2026",
+      "status": "unhealthy",
+      "issues": [
+        "Motor in thermal cutback on 22nd"
+      ],
+      "timestamp": "",
       "vt_box_time": "",
-      "distance": "Nil",
-      "duration": "Nil",
+      "distance": "29.58",
+      "duration": "1.14 days",
       "versions": {
         "VT_BOX Version": "1.2.2",
         "VCU Firmware Version": "2.2.0",
@@ -620,8 +648,8 @@
       "issues": [],
       "timestamp": "",
       "vt_box_time": "",
-      "distance": "75.93",
-      "duration": "18.5 hours",
+      "distance": "163.03",
+      "duration": "4.38 days",
       "versions": {
         "VT_BOX Version": "1.2.2",
         "VCU Firmware Version": "2.3.2",
@@ -668,15 +696,12 @@
       "nickname": "P54 Vehicle",
       "location": "Silver Creek, U.S",
       "mode": "Non-Autonomous",
-      "status": "unhealthy",
-      "issues": [
-        "MDM data missing on 16/07/2026",
-        "BMS_DCL_reduced_due_to_low_soc on 15& 17 July"
-      ],
+      "status": "healthy",
+      "issues": [],
       "timestamp": "",
       "vt_box_time": "",
-      "distance": "223.10",
-      "duration": "18.2",
+      "distance": "841.15",
+      "duration": "2.28 weeks",
       "versions": {
         "VT_BOX Version": "1.2.2",
         "VCU Firmware Version": "2.3.1",
@@ -692,18 +717,15 @@
       "mode": "Non-Autonomous",
       "status": "unhealthy",
       "issues": [
-        "Motor Overspeed Fault",
         "DSP Control Fault",
-        "DSP Encoder Fault",
         "BMS_chrg_limit_enforcement_fault",
-        "BMS_DCL_reduced_due_to_temp",
-        "BMS_CCL_reduced_due_to_temp",
-        "MDM data did not come on 15.07.2026"
+        "DSP Encoder Fault on 16th",
+        "SinCos Tracking Warning on 20th, 23rd, 24th & 30th"
       ],
       "timestamp": "",
       "vt_box_time": "",
-      "distance": "134.63",
-      "duration": "1.16 days",
+      "distance": "229.54",
+      "duration": "1.66 weeks",
       "versions": {
         "VT_BOX Version": "1.2.2",
         "VCU Firmware Version": "2.3.1",
@@ -719,12 +741,12 @@
       "status": "unhealthy",
       "issues": [
         "Auxilary_battery_voltage on 9th & 10th",
-        "MDM online but no data on 12th July"
+        "RPDO Timeout (drive inhibit) on 21th"
       ],
       "timestamp": "",
       "vt_box_time": "",
-      "distance": "55.48",
-      "duration": "1.25 hours",
+      "distance": "84.60",
+      "duration": "1.19 weeks",
       "versions": {
         "VT_BOX Version": "1.2.2",
         "VCU Firmware Version": "2.3.1",
@@ -738,15 +760,12 @@
       "nickname": "P57 Vehicle",
       "location": "Silver Creek, U.S OFFICE",
       "mode": "Non-Autonomous",
-      "status": "unhealthy",
-      "issues": [
-        "MDM data missing on 12th July",
-        "BMS_DCL_reduced_due_to_low_soc"
-      ],
+      "status": "healthy",
+      "issues": [],
       "timestamp": "",
       "vt_box_time": "",
-      "distance": "24.50",
-      "duration": "1.56 days",
+      "distance": "44.21",
+      "duration": "1.78 weeks",
       "versions": {
         "VT_BOX Version": "1.2.2",
         "VCU Firmware Version": "2.3.1",
@@ -762,12 +781,13 @@
       "mode": "Non-Autonomous",
       "status": "unhealthy",
       "issues": [
-        "MDM is on but no data on 14.07.2026"
+        "Epas level 3 continuous",
+        "Motor in thermal cutback on 20th"
       ],
       "timestamp": "",
       "vt_box_time": "",
-      "distance": "33.36",
-      "duration": "19.2 hours",
+      "distance": "81.68",
+      "duration": "1.96 weeks",
       "versions": {
         "VT_BOX Version": "1.2.2",
         "VCU Firmware": "2.3.1",
@@ -781,12 +801,14 @@
       "nickname": "P59 Vehicle",
       "location": "Silver Creek, U.S OFFICE",
       "mode": "Non-Autonomous",
-      "status": "healthy",
-      "issues": [],
+      "status": "unhealthy",
+      "issues": [
+        "EPAS Level 3 Fault occurred continuously."
+      ],
       "timestamp": "",
       "vt_box_time": "",
-      "distance": "16.86",
-      "duration": "2.58 days",
+      "distance": "138.68",
+      "duration": "2.15 weeks",
       "versions": {
         "VT_BOX Version": "1.2.2",
         "VCU Firmware Version": "2.3.1",
@@ -803,12 +825,13 @@
       "status": "unhealthy",
       "issues": [
         "auxilary_battery_voltage",
-        "high_voltage_isolation_fault"
+        "high_voltage_isolation_fault",
+        "Epas Level 2 on 03rd, 10th, 18th & 25th"
       ],
       "timestamp": "",
       "vt_box_time": "",
-      "distance": "96.94",
-      "duration": "1.52 days",
+      "distance": "271.38",
+      "duration": "1.35 weeks",
       "versions": {
         "VT_BOX Version": "1.2.2",
         "VCU Firmware Version": "2.2.0",
@@ -822,12 +845,12 @@
       "mode": "Non-Autonomous",
       "status": "unhealthy",
       "issues": [
-        "No Version details"
+        "Epas level 2 on 18th"
       ],
       "timestamp": "",
       "vt_box_time": "",
-      "distance": "86.59",
-      "duration": "1.70 days",
+      "distance": "240.47",
+      "duration": "1.12 weeks",
       "versions": {
         "VT_BOX Version": "Nil",
         "VCU Firmware Version": "Nil"
@@ -838,12 +861,16 @@
       "nickname": "P49 Vehicle",
       "location": "Batesville, Zavala County, Texas, United States",
       "mode": "Non-Autonomous",
-      "status": "healthy",
-      "issues": [],
+      "status": "unhealthy",
+      "issues": [
+        "EPAS Level 2 & Level 3 Fault:  04-Jul-2026 13:40:00",
+        "EPAS Level 2 Fault Only:  04-Jul 14:00:00, 23-Jul 16:40:00, 24-Jul 11:40:00",
+        "EPAS Level 3 Fault Only:  06-Jul 09:00:00"
+      ],
       "timestamp": "",
       "vt_box_time": "",
-      "distance": "11.99",
-      "duration": "1.07 days",
+      "distance": "224.08",
+      "duration": "1.18 weeks",
       "versions": {
         "VT_BOX Version": "1.2.2",
         "VCU Firmware Version": "2.2.0",
@@ -863,10 +890,10 @@
       "timestamp": "",
       "vt_box_time": "",
       "distance": "NIL",
-      "duration": "2.56 hours",
+      "duration": "1.02 days",
       "versions": {
-        "VT_BOX Version": "",
-        "VCU Firmware Version": ""
+        "VT_BOX Version": "Nil",
+        "VCU Firmware Version": "Nil"
       }
     },
     "MD9GBUE27DC341003": {
@@ -908,12 +935,15 @@
       "nickname": "P12 Vehicle",
       "location": "Ignatius Drive, Richwoods, Frisco, Collin County, Texas, United States",
       "mode": "Autonomous",
-      "status": "healthy",
-      "issues": [],
+      "status": "unhealthy",
+      "issues": [
+        "EPAS Level 2 Fault occurred on 1st July (7 occurrences)",
+        "BMS_input_power_supply_fault on 1st July"
+      ],
       "timestamp": "",
       "vt_box_time": "",
-      "distance": "0.9",
-      "duration": "1 day 2 hours 31 min",
+      "distance": "9.57",
+      "duration": "2.94 days",
       "versions": {
         "VT_BOX Version": "1.2.2",
         "VCU Firmware Version": "2.3.0",
@@ -928,12 +958,15 @@
       "mode": "Autonomous",
       "status": "unhealthy",
       "issues": [
-        "RPDO Timeout (drive inhibit)"
+        "RPDO Timeout (drive inhibit)",
+        "Motor in low voltage cutback",
+        "epas level 1 fault",
+        "weak_cell_fault on 5th"
       ],
       "timestamp": "",
       "vt_box_time": "",
-      "distance": "63.50",
-      "duration": "23.2 hours",
+      "distance": "439.26",
+      "duration": "3.10 week",
       "versions": {
         "VT_BOX Version": "HMI",
         "VCU Firmware Version": "2.3.0",
@@ -948,12 +981,13 @@
       "mode": "Autonomous",
       "status": "unhealthy",
       "issues": [
-        "auxilary_battery_voltage"
+        "auxilary_battery_voltage",
+        "EPAS Level 1 Fault occurred on 1st, 5th, 8th, 16th, and 28th July."
       ],
       "timestamp": "",
       "vt_box_time": "",
-      "distance": "3.65KM",
-      "duration": "7.77 hours",
+      "distance": "14.62",
+      "duration": "5.73 days",
       "versions": {
         "VT_BOX Version": "2.3.0",
         "VCU Firmware Version": "2.2.0",
