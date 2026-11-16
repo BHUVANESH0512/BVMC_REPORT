@@ -27,6 +27,23 @@
       --radius: 8px;
     }
 
+    .vehicle-link {
+      color: #2563eb;
+      text-decoration: underline;
+      text-underline-offset: 3px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .vehicle-link:hover {
+      color: #1d4ed8;
+      text-decoration-thickness: 2px;
+    }
+    .vehicle-link:focus-visible {
+      outline: 2px solid #2563eb;
+      outline-offset: 3px;
+      border-radius: 3px;
+    }
+
     * {
       box-sizing: border-box;
       margin: 0;
@@ -297,6 +314,45 @@
       margin-bottom: 12px;
     }
 
+    .issue-card {
+      background-color: #ffffff;
+      border: 1px solid var(--border);
+      border-left: 4px solid var(--border);
+      border-radius: 4px;
+      padding: 10px 12px;
+      margin-bottom: 8px;
+      font-size: 13px;
+    }
+
+    .issue-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 8px;
+    }
+
+    .issue-card-actions {
+      display: flex;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+
+    .issue-card-actions button {
+      padding: 2px 8px;
+      font-size: 11px;
+    }
+
+    .issue-card-meta {
+      margin-top: 4px;
+      font-size: 12px;
+      color: var(--grey);
+      line-height: 1.6;
+    }
+
+    .issue-card-meta span.k {
+      color: var(--text-muted);
+    }
+
     /* CUSTOM SEARCH DROPDOWN STYLING */
     .search-container {
       position: relative;
@@ -445,14 +501,19 @@
 
   <header style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
     <div>
-      <h1>Boson Motor</h1>
+      <img src="/Boson_logo.png?v=20260826" alt="Boson Motor" style="height: 56px; width: auto; max-width: 240px; object-fit: contain; display: block; margin-bottom: 6px;">
       <p>Customer Vehicles Mission Report Builder</p>
       <div id="db-status-container" style="margin-top: 5px;">
         <span id="db-status-badge" style="font-size: 11px; padding: 4px 8px; border-radius: 4px; font-weight: 600; display: inline-block; background-color: #f1f5f9; color: #475569; border: 1px solid #cbd5e1;">Checking database connection...</span>
       </div>
     </div>
-    <div>
-      <span style="font-size: 12px; color: #94a3b8; font-weight: 500;">Vehicle Dashboard &mdash; Static Customer Vehicles Mission Report</span>
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <a href="/" target="_blank" style="color: #cbd5e1; text-decoration: none; font-size: 12px; font-weight: 500; display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.08); transition: all 0.15s ease;">
+        <span>🌐</span> Customer Portal ↗
+      </a>
+      <a href="/logout" style="color: #fca5a5; text-decoration: none; font-size: 12px; font-weight: 600; display: inline-flex; align-items: center; gap: 5px; padding: 6px 12px; border-radius: 6px; border: 1px solid rgba(239,68,68,0.4); background: rgba(239,68,68,0.15); transition: all 0.15s ease;">
+        <span>🚪</span> Logout
+      </a>
     </div>
   </header>
 
@@ -462,12 +523,21 @@
     <div>
       <!-- Global Report Metadata -->
       <div class="panel">
-        <div class="panel-title">
+        <div class="panel-title" style="display: flex; justify-content: space-between; align-items: center;">
           <span>Global Report Configuration</span>
+          <button class="btn-danger" id="delete-period-btn" onclick="deleteCurrentReportPeriod()" style="display: none; padding: 4px 10px; font-size: 11px;">🗑️ Delete Report Period</button>
         </div>
+        
+        <div class="form-group" style="margin-bottom: 12px;">
+          <label for="saved-periods-select">Saved Report Period (Select to Load / Edit)</label>
+          <select id="saved-periods-select" onchange="onSelectSavedPeriod(this.value)" style="width: 100%; padding: 8px 12px; border-radius: 6px; border: 1px solid #cbd5e1; background: #f8fafc; font-size: 13px; font-weight: 500; color: #1e293b;">
+            <option value="">-- Choose a saved report period to load --</option>
+          </select>
+        </div>
+
         <div class="form-group" style="margin-bottom: 0;">
           <label for="global-duration-input">Global Report Duration Range</label>
-          <input type="text" id="global-duration-input" placeholder="e.g. 08-07-2026 09:00:00 to 08-07-2026 12:00:00" onchange="saveStateToServer()">
+          <input type="text" id="global-duration-input" placeholder="e.g. 01-08-2026 to 15-08-2026" oninput="onDurationInputChanged()" onchange="onDurationInputSaved()">
         </div>
       </div>
 
@@ -521,10 +591,72 @@
 
         <!-- ISSUES SECTION -->
         <div id="issues-container" style="display: none;">
-          <label>Anomalies / Warnings Log</label>
+          <label id="issues-container-label">Anomalies / Warnings Log</label>
+          <div class="form-group">
+            <label for="issue-title-input">Issue *</label>
+            <input type="text" id="issue-title-input" placeholder="Short issue title, e.g. Cell voltage imbalance">
+          </div>
+          <div class="form-group">
+            <label for="issue-description-input">Description *</label>
+            <textarea id="issue-description-input" rows="2" placeholder="Describe the issue in detail"></textarea>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="issue-period-input">Period</label>
+              <input type="text" id="issue-period-input" placeholder="e.g. 29 and 30 September 2026">
+            </div>
+            <div class="form-group">
+              <label for="issue-occurrences-input">Occurrences</label>
+              <input type="text" id="issue-occurrences-input" placeholder="e.g. 2 or Continuous">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="issue-component-select">Component</label>
+              <select id="issue-component-select">
+                <option value="BMS">BMS</option>
+                <option value="Motor">Motor</option>
+                <option value="DCDC">DCDC</option>
+                <option value="EPAS">EPAS</option>
+                <option value="MDM">MDM</option>
+                <option value="Other" selected>Other</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="issue-severity-select">Severity</label>
+              <select id="issue-severity-select">
+                <option value="Low">Low</option>
+                <option value="Medium" selected>Medium</option>
+                <option value="High">High</option>
+                <option value="Critical">Critical</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="issue-reported-by-input">Issue Reported By</label>
+              <input type="text" id="issue-reported-by-input" placeholder="e.g. Vehicle (automatic alert) or PTE team">
+            </div>
+            <div class="form-group">
+              <label for="issue-team-input">Responsible Team</label>
+              <input type="text" id="issue-team-input" placeholder="e.g. BMS Team">
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="issue-rca-input">RCA (Root Cause Analysis)</label>
+            <input type="text" id="issue-rca-input" placeholder="e.g. Cell imbalance due to ageing">
+          </div>
+          <div class="form-group">
+            <label for="issue-grafana-input">Grafana Link</label>
+            <input type="text" id="issue-grafana-input" placeholder="https://grafana.bosonmotors.com/d/... (optional)">
+          </div>
+          <div class="form-group">
+            <label for="issue-feedback-input">Customer Feedback</label>
+            <textarea id="issue-feedback-input" rows="2" maxlength="1000" placeholder="Feedback received from the customer for this issue (optional)"></textarea>
+          </div>
           <div class="issue-input-row">
-            <input type="text" id="issue-text-input" placeholder="Enter system issue / fault...">
-            <button class="btn-primary" onclick="addIssue()" style="padding: 10px;">Add</button>
+            <button class="btn-primary" id="issue-add-btn" onclick="addIssue()" style="padding: 10px;">Add Issue</button>
+            <button class="btn-secondary" id="issue-cancel-btn" onclick="resetIssueForm()" style="padding: 10px; display: none;">Cancel Edit</button>
           </div>
           <div id="issues-list"></div>
         </div>
@@ -561,6 +693,13 @@
           <button class="btn-primary" onclick="addVersionRow('', '')" style="margin-top: 8px; padding: 6px 12px; font-size: 12px; background-color: #475569;">+ Add Version Field</button>
         </div>
 
+        <!-- GRAFANA / TELEMETRY LINK SECTION (OPTIONAL) -->
+        <div class="form-group" style="margin-top: 16px;">
+          <label for="grafana-url-input">Grafana Dashboard / Telemetry URL (Optional)</label>
+          <input type="url" id="grafana-url-input" placeholder="https://grafana.bosonmotors.com/d/..." style="font-size: 12px;">
+          <span style="font-size: 11px; color: #64748b; margin-top: 3px; display: block;">If provided, a direct Grafana link will appear next to this vehicle in the mission report.</span>
+        </div>
+
         <div class="btn-group">
           <button class="btn-primary" onclick="addVehicle()" style="flex: 2;">Add / Update Vehicle</button>
         </div>
@@ -586,9 +725,14 @@
         </div>
       </div>
 
-      <!-- DOWNLOAD BAR -->
-      <div class="download-container" style="max-width: 100%; padding: 0; text-align: center; flex-shrink: 0;">
+      <!-- ACTIONS BAR -->
+      <div class="download-container" style="max-width: 100%; padding: 0; text-align: center; flex-shrink: 0; display: flex; flex-direction: column; gap: 10px;">
+        <button class="upload-btn" id="upload-mission-report-btn" onclick="uploadMissionReport()" style="width: 100%; background-color: var(--accent); color: #ffffff; border: none; padding: 13px 20px; font-size: 14px; font-weight: 600; border-radius: var(--radius); cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: var(--shadow-sm); transition: background-color 0.15s ease;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          Upload / Add Mission Report
+        </button>
         <button class="download-btn" onclick="downloadReport()" style="width: 100%;">Download Email-Safe HTML Report</button>
+        <button class="btn-secondary" id="export-csv-btn" onclick="exportIssuesCSV()" style="width: 100%; padding: 12px 20px; font-size: 14px; font-weight: 600;">Export CSV</button>
       </div>
 
       <!-- LIVE PREVIEW CONTAINER -->
@@ -686,42 +830,680 @@
       "MD9GBUE28DC341012": {nickname: "Yellow Dragon", location: "Not Available", mode: "Autonomous"}
     };
 
+    // ==========================================================
+    // ISSUE SUMMARY HELPERS
+    // Line-by-line port of issue_report.py (get_issue_summary_section,
+    // build_category_tables_html, build_issue_detail_table).  Keep both in sync.
+    // ==========================================================
+    const ISSUE_COMPONENTS = ["BMS", "Motor", "DCDC", "EPAS", "MDM", "Other"];
+    const ISSUE_SEVERITIES = ["Low", "Medium", "High", "Critical"];
+    const BMS_MOTOR_COMPONENTS = ["BMS", "Motor", "DCDC"];
+    const ISSUE_STATUSES = ["unhealthy", "mdm_issue"];
+    const CATEGORY_DEFS = [
+      ["BMS", "BMS Issues", "🔋", "#dc2626"],
+      ["EPAS", "EPAS Issues", "🚗", "#2563eb"],
+      ["DCDC", "DCDC Issues", "🔌", "#0d9488"],
+      ["Motor", "Motor Faults", "⚙️", "#ea580c"],
+      ["MDM", "Data / Telemetry Issues", "📶", "#7c3aed"]
+    ];
+    const SEVERITY_STYLES = {
+      "Low": ["#dcfce7", "#16a34a"],
+      "Medium": ["#ffedd5", "#ea580c"],
+      "High": ["#fee2e2", "#dc2626"],
+      "Critical": ["#991b1b", "#ffffff"]
+    };
+    const SEVERITY_BORDERS = {"Low": "#16a34a", "Medium": "#ea580c", "High": "#dc2626", "Critical": "#991b1b"};
+
+    function escapeHtml(value) {
+      return String(value == null ? '' : value)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;').replace(/'/g, '&#x27;');
+    }
+
+    function cleanText(value, limit = 2000) {
+      if (value == null) return '';
+      return String(value).replace(/[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]/g, '').trim().slice(0, limit);
+    }
+
+    function getShortNickname(nickname) {
+      let name = nickname.replace(/\s*Vehicle.*/, '');
+      name = name.replace(/\s*\(.*?\)/g, '');
+      if (name === "US HC Fargo") return "USHC Fargo";
+      if (name === "US HC Yuba") return "USHC Yuba";
+      return name.trim();
+    }
+
+    function vehicleIssueItems(val) {
+      const issues = Array.isArray(val.issues) ? val.issues : [];
+      const details = Array.isArray(val.issue_details) ? val.issue_details : [];
+      const count = details.length ? Math.max(issues.length, details.length) : issues.length;
+      const items = [];
+      const usedIds = new Set();
+      for (let idx = 0; idx < count; idx++) {
+        const d = (idx < details.length && details[idx] && typeof details[idx] === 'object' && !Array.isArray(details[idx])) ? details[idx] : {};
+        const legacyTitle = idx < issues.length ? cleanText(issues[idx]) : '';
+        let component = cleanText(d.component);
+        if (!ISSUE_COMPONENTS.includes(component)) component = '';
+        let severity = cleanText(d.severity);
+        if (!ISSUE_SEVERITIES.includes(severity)) severity = '';
+        let issueId = cleanText(d.id, 64).replace(/[^A-Za-z0-9_-]/g, '');
+        if (!issueId || usedIds.has(issueId)) issueId = 'i' + (idx + 1);
+        usedIds.add(issueId);
+        items.push({
+          id: issueId,
+          title: cleanText(d.issue) || legacyTitle,
+          description: cleanText(d.description),
+          period: cleanText(d.period),
+          occurrences: cleanText(d.occurrences),
+          component: component,
+          reported_by: cleanText(d.reported_by),
+          severity: severity,
+          rca: cleanText(d.rca),
+          responsible_team: cleanText(d.responsible_team),
+          customer_feedback: cleanText(d.customer_feedback, 1000),
+          grafana_url: cleanUrl(d.grafana_url),
+          structured: !!component
+        });
+      }
+      return items;
+    }
+
+    function cleanUrl(value) {
+      const url = cleanText(value, 500);
+      return /^https?:\/\/[^\s<>"']+$/i.test(url) ? url : '';
+    }
+
+    function severityBadge(severity) {
+      if (!SEVERITY_STYLES[severity]) return '';
+      const [bg, fg] = SEVERITY_STYLES[severity];
+      return `<span style="display: inline-block; padding: 3px 8px; font-size: 10px; font-weight: bold; border-radius: 12px; background-color: ${bg}; color: ${fg}; text-transform: uppercase;">${severity}</span>`;
+    }
+
+    function issueBlockHTML(item) {
+      const border = SEVERITY_BORDERS[item.severity] || "#cbd5e1";
+      const badge = severityBadge(item.severity);
+      const lines = [`<strong style="color: #0f172a;">${escapeHtml(item.title)}</strong>` + (badge ? ` &nbsp;${badge}` : "")];
+      [["Description", "description"], ["Period", "period"], ["Occurrences", "occurrences"],
+       ["RCA", "rca"], ["Responsible Team", "responsible_team"]].forEach(([label, key]) => {
+        if (item[key]) lines.push(`<span style="color: #64748b;">${label}:</span> ${escapeHtml(item[key])}`);
+      });
+      return '<div style="margin-top: 6px; padding: 8px 10px; background-color: #f8fafc; border: 1px solid #e2e8f0; ' +
+        `border-left: 3px solid ${border}; border-radius: 4px; font-size: 12px; line-height: 1.5; color: #475569;">` +
+        lines.join("<br/>") + "</div>";
+    }
+
+    function issueBucketFor(item, statusVal) {
+      if (item.component === "MDM") return "mdm";
+      if (BMS_MOTOR_COMPONENTS.includes(item.component)) return "bms";
+      if (statusVal === "mdm_issue" && !item.structured) return "mdm";
+      const title = item.title.toLowerCase();
+      if (title.includes("data loss")) return "data_loss";
+      if (title.includes("plug state 4") || title.includes("charging")) return "charging";
+      return "bms";
+    }
+
+    function issueEntry(head, items) {
+      return head + items.filter(i => i.structured).map(issueBlockHTML).join("");
+    }
+
+    function legacyTitles(items) {
+      return items.filter(i => !i.structured).map(i => i.title).join(", ");
+    }
+
+    function categoryData(fleet) {
+      const counts = {};
+      const affected = {};
+      const affectedDetails = {};
+      CATEGORY_DEFS.forEach(c => { counts[c[0]] = 0; affected[c[0]] = []; affectedDetails[c[0]] = []; });
+      const telemetry = [];
+      let anyStructured = false;
+      Object.keys(fleet).sort().forEach(vin => {
+        const val = fleet[vin];
+        if (!ISSUE_STATUSES.includes(val.status || "healthy")) return;
+        const nick = getShortNickname(val.nickname || "");
+        const mdmItems = [];
+        vehicleIssueItems(val).forEach(it => {
+          if (!it.structured) return;
+          anyStructured = true;
+          const comp = it.component;
+          if (comp in counts) {
+            counts[comp] += 1;
+            if (!affected[comp].includes(nick)) {
+              affected[comp].push(nick);
+              affectedDetails[comp].push({vin: vin, nick: nick});
+            }
+          }
+          if (comp === "MDM") mdmItems.push(it);
+        });
+        if (mdmItems.length) telemetry.push({vin: vin, nick: nick, items: mdmItems});
+      });
+      return {counts: counts, affected: affected, affectedDetails: affectedDetails, telemetry: telemetry, anyStructured: anyStructured};
+    }
+
+    function buildCategoryTablesHTML(fleet) {
+      const data = categoryData(fleet);
+      if (!data.anyStructured) return "";
+      const th = a => `padding: 8px 10px; font-weight: 600; text-align: ${a}; border-bottom: 2px solid #e2e8f0; color: #475569; font-size: 12px;`;
+      const td = "padding: 10px; border-bottom: 1px solid #f1f5f9; vertical-align: middle;";
+
+      let rowsA = "";
+      let total = 0;
+      CATEGORY_DEFS.forEach(([comp, label, icon, color]) => {
+        const count = data.counts[comp];
+        if (count === 0) return;
+        total += count;
+        const vehLinks = (data.affectedDetails[comp] || []).map(v =>
+          `<span style="white-space: nowrap;"><a href="#vin-${v.vin}" class="vehicle-link" style="color: #2563eb; text-decoration: underline; text-underline-offset: 3px; font-weight: 600; cursor: pointer;">${escapeHtml(v.nick)}</a>&nbsp;(${v.vin})</span>`
+        );
+        const names = vehLinks.length ? vehLinks.join("<br/>") : data.affected[comp].map(escapeHtml).join("<br/>");
+        rowsA +=
+          `<tr><td style="${td}"><table border="0" cellpadding="0" cellspacing="0"><tr>` +
+          `<td width="28" height="28" align="center" valign="middle" bgcolor="${color}" ` +
+          `style="width: 28px; height: 28px; background-color: ${color}; border-radius: 6px; color: #ffffff; ` +
+          `font-size: 14px; line-height: 28px; text-align: center;">${icon}</td>` +
+          `<td style="padding-left: 10px; font-size: 13px; font-weight: 600; color: #0f172a;">${label}</td>` +
+          `</tr></table></td>` +
+          `<td style="${td} text-align: center; font-size: 14px; font-weight: 700; color: #0f172a;">${count}</td>` +
+          `<td style="${td} font-size: 12px; line-height: 1.6; color: #475569; white-space: nowrap;">${names}</td></tr>`;
+      });
+      rowsA +=
+        '<tr bgcolor="#f8fafc"><td style="padding: 10px; font-size: 13px; font-weight: 700; color: #0f172a;">Total Issues</td>' +
+        `<td style="padding: 10px; text-align: center; font-size: 14px; font-weight: 700; color: #0f172a;">${total}</td>` +
+        '<td style="padding: 10px; font-size: 12px; color: #475569;">—</td></tr>';
+
+      const tableA =
+        '<table width="100%" border="0" cellpadding="0" cellspacing="0" style="font-size: 13px; border: 1px solid #e2e8f0; border-radius: 6px; overflow: hidden;">' +
+        '<thead><tr bgcolor="#f8fafc">' +
+        `<th style="${th("left")}">Issue Category</th>` +
+        `<th style="${th("center")} width: 80px;">Issue Count</th>` +
+        `<th style="${th("left")} white-space: nowrap;">Affected Vehicles</th>` +
+        `</tr></thead><tbody>${rowsA}</tbody></table>`;
+
+      let tableB;
+      if (data.telemetry.length) {
+        let rowsB = "";
+        data.telemetry.forEach(entry => {
+          const lines = entry.items.map(it => {
+            let text = escapeHtml(it.description || it.title);
+            if (it.period) text += ` (${escapeHtml(it.period)})`;
+            return text;
+          });
+          const vehCell = `<a href="#vin-${entry.vin}" class="vehicle-link" style="color: #2563eb; text-decoration: underline; text-underline-offset: 3px; font-weight: 600; cursor: pointer;">${escapeHtml(entry.nick)}</a><br/><span style="font-size: 10px; color: #64748b; font-weight: normal; font-family: Courier, monospace;">(${entry.vin})</span>`;
+          rowsB +=
+            `<tr><td style="${td} font-size: 13px; font-weight: 700; color: #0f172a;">${vehCell}</td>` +
+            `<td style="${td} text-align: center; font-size: 13px; font-weight: 700; color: #0f172a;">${entry.items.length}</td>` +
+            `<td style="${td} font-size: 12px; color: #475569;">${lines.join("<br/>")}</td></tr>`;
+        });
+        tableB =
+          '<table width="100%" border="0" cellpadding="0" cellspacing="0" style="font-size: 13px; border: 1px solid #e2e8f0; border-radius: 6px; overflow: hidden;">' +
+          '<thead><tr bgcolor="#f8fafc">' +
+          `<th style="${th("left")}">Vehicle(s)</th>` +
+          `<th style="${th("center")} width: 80px;">Issue Count</th>` +
+          `<th style="${th("left")}">Description</th>` +
+          `</tr></thead><tbody>${rowsB}</tbody></table>`;
+      } else {
+        tableB = '<table width="100%" border="0" cellpadding="0" cellspacing="0" style="font-size: 13px; border: 1px solid #e2e8f0; border-radius: 6px;">' +
+          '<tr><td style="padding: 16px; font-size: 13px; color: #64748b; text-align: center;">No telemetry issues reported.</td></tr></table>';
+      }
+
+      const heading = 'margin: 0 0 10px 0; font-size: 15px; font-weight: 600; color: #0f172a;';
+      return `
+    <!-- ISSUE CATEGORY SUMMARY + DATA / TELEMETRY ISSUES -->
+    <tr id="issue-category-summary">
+      <td style="padding: 0 24px 24px 24px;">
+        <table width="100%" border="0" cellpadding="0" cellspacing="0">
+          <tr>
+            <td class="stack-col" width="50%" valign="top" style="padding-right: 8px;">
+              <h3 style="${heading}">Issue Category Summary</h3>
+              ${tableA}
+            </td>
+            <td class="stack-col" width="50%" valign="top" style="padding-left: 8px;">
+              <h3 style="${heading}">Data / Telemetry Issues</h3>
+              ${tableB}
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+    `;
+    }
+
+    function formatCompactVehicleLink(vin, nick) {
+      return `<a href="#vin-${vin}" class="vehicle-link" style="color: #2563eb; text-decoration: underline; text-underline-offset: 3px; font-weight: 600; cursor: pointer;">${escapeHtml(nick)}</a>`;
+    }
+
+    function formatCompactFaults(vin, nick, grafanaUrl, items) {
+      const vehicleLink = `<strong>${formatCompactVehicleLink(vin, nick)}</strong>`;
+      const grafanaLink = grafanaUrl ? `<a href="${escapeHtml(grafanaUrl)}" target="_blank" style="color: #2563eb; text-decoration: underline; font-size: 11px; font-weight: 600;">Grafana link ↗</a>` : "";
+      const parts = [vehicleLink];
+      if (grafanaLink) parts.push(grafanaLink);
+      items.forEach(it => {
+        if (it.structured) {
+          const badge = it.severity ? severityBadge(it.severity) : "";
+          if (badge) {
+            parts.push(`<strong>${escapeHtml(it.title)} — ${badge}</strong>`);
+          } else {
+            parts.push(`<strong>${escapeHtml(it.title)}</strong>`);
+          }
+        } else if (it.title) {
+          parts.push(`<strong>${escapeHtml(it.title)}</strong>`);
+        }
+      });
+      return parts.join(" &nbsp;|&nbsp; ");
+    }
+
+    function formatCompactMdm(vin, nick, grafanaUrl, mdmItems, val, issuesStr) {
+      const vehicleLink = `<strong>${formatCompactVehicleLink(vin, nick)}</strong>`;
+      const grafanaLink = grafanaUrl ? ` &nbsp;<a href="${escapeHtml(grafanaUrl)}" target="_blank" style="color: #2563eb; text-decoration: underline; font-size: 11px; font-weight: 600;">Grafana link ↗</a>` : "";
+      let descStr;
+      if (mdmItems && mdmItems.length) {
+        const itemParts = mdmItems.map(it => {
+          let desc = (it.description || it.title || `VT_BOX online: ${val.vt_box_time || 'Not Available'}`).trim();
+          if (desc.endsWith(".")) desc = desc.slice(0, -1);
+          const badge = it.severity ? severityBadge(it.severity) : "";
+          return badge ? `${escapeHtml(desc)}. &nbsp;${badge}` : `${escapeHtml(desc)}.`;
+        });
+        descStr = itemParts.join(" &nbsp;|&nbsp; ");
+      } else {
+        let desc = (issuesStr || `VT_BOX online: ${val.vt_box_time || 'Not Available'}`).trim();
+        if (desc.endsWith(".")) desc = desc.slice(0, -1);
+        descStr = `${escapeHtml(desc)}.`;
+      }
+      return `${vehicleLink} (${vin}) — ${descStr}${grafanaLink}`;
+    }
+
+    function buildIssueSummaryHTML(fleet, globalDuration) {
+      const temp_anomaly_vins = ["MD9GBUE27DC341048", "MD9GBUE23DC341063", "MD9GBUE29DC341066", "MD9GBUE22DC341068", "MD9GBUE27DC341079", "MD9GBUE20DC341070", "MD9GBUE24DC341038"];
+      const lists = {mdm: [], inactive: [], temp: [], bms: [], charging: [], ok: [], data_loss: []};
+
+      Object.keys(fleet).sort().forEach(vin => {
+        const val = fleet[vin];
+        const statusVal = val.status || "healthy";
+        const nick = getShortNickname(val.nickname || "");
+        const items = vehicleIssueItems(val);
+        const issues = items.map(i => i.title);
+        const issues_str = issues.join(", ");
+
+        const grafana_url = (val.grafana_url || '').trim();
+        const grafana_link = grafana_url ? ` &nbsp;<a href="${escapeHtml(grafana_url)}" target="_blank" style="color: #2563eb; text-decoration: underline; font-size: 11px; font-weight: 600;">Grafana link ↗</a>` : '';
+        const hasStructured = items.some(i => i.structured);
+
+        if (statusVal === 'mdm_issue') {
+          if (!hasStructured) {
+            lists.mdm.push(formatCompactMdm(vin, nick, grafana_url, [], val, issues_str));
+          } else {
+            const groups = {};
+            items.forEach(it => { (groups[issueBucketFor(it, statusVal)] = groups[issueBucketFor(it, statusVal)] || []).push(it); });
+            const mdmItems = groups.mdm || [];
+            lists.mdm.push(formatCompactMdm(vin, nick, grafana_url, mdmItems, val, issues_str));
+            ["data_loss", "charging", "bms"].forEach(bucket => {
+              if (groups[bucket]) lists[bucket].push(formatCompactFaults(vin, nick, grafana_url, groups[bucket]));
+            });
+          }
+        } else if (statusVal === 'inactive') {
+          lists.inactive.push(`<strong><span style="color: #64748b;">${nick}</span></strong> — Last updated ${val.timestamp || 'Not Available'}${grafana_link}`);
+        } else if (statusVal === 'unhealthy') {
+          if (!hasStructured) {
+            const parts = [`<strong>${formatCompactVehicleLink(vin, nick)}</strong>`];
+            if (grafana_url) parts.push(`<a href="${escapeHtml(grafana_url)}" target="_blank" style="color: #2563eb; text-decoration: underline; font-size: 11px; font-weight: 600;">Grafana link ↗</a>`);
+            if (issues_str) parts.push(`<strong>${escapeHtml(issues_str)}</strong>`);
+            const entry = parts.join(" &nbsp;|&nbsp; ");
+            if (issues.some(i => i.toLowerCase().includes("data loss"))) {
+              lists.data_loss.push(entry);
+            } else if (issues.some(i => i.toLowerCase().includes("plug state 4") || i.toLowerCase().includes("charging"))) {
+              lists.charging.push(entry);
+            } else {
+              lists.bms.push(entry);
+            }
+          } else {
+            const groups = {};
+            items.forEach(it => { (groups[issueBucketFor(it, statusVal)] = groups[issueBucketFor(it, statusVal)] || []).push(it); });
+            ["mdm", "data_loss", "charging", "bms"].forEach(bucket => {
+              if (!groups[bucket]) return;
+              if (bucket === "mdm") {
+                lists.mdm.push(formatCompactMdm(vin, nick, grafana_url, groups.mdm, val, issues_str));
+              } else {
+                lists[bucket].push(formatCompactFaults(vin, nick, grafana_url, groups[bucket]));
+              }
+            });
+          }
+        } else if (statusVal === 'healthy') {
+          lists.ok.push(`<span style="color:#16a34a; font-weight:600;">${nick}</span>${grafana_link}`);
+        }
+
+        if (temp_anomaly_vins.includes(vin)) lists.temp.push(formatCompactVehicleLink(vin, nick));
+      });
+
+      function format_js_row(title, color, text_list, count, is_bold = true, badge_bg = null, badge_color = null) {
+        let rendered_text;
+        if (!text_list || text_list.length === 0) {
+          if (title === "Charging Issues (Plug State 4)") {
+            rendered_text = "None reported";
+          } else {
+            return "";
+          }
+        } else if (title === "Motor Controller Temperature (Negative Values)" || title === "✓ OK / No Issues") {
+          rendered_text = text_list.join(", ");
+        } else {
+          rendered_text = text_list.join("<br/>");
+        }
+        let count_badge = "—";
+        if (count !== null) {
+          if (badge_bg && badge_color) {
+            count_badge = `<span style="display: inline-block; padding: 4px 8px; font-size: 11px; font-weight: bold; border-radius: 12px; background-color: ${badge_bg}; color: ${badge_color};">${count}</span>`;
+          } else {
+            count_badge = `<span style="display: inline-block; padding: 4px 8px; font-size: 11px; font-weight: bold; border-radius: 12px; background-color: #f1f3f5; color: #475569;">${count}</span>`;
+          }
+        }
+        const title_style = is_bold ? `color: ${color}; font-weight: 600; vertical-align: top;` : "color: #475569; vertical-align: top;";
+        return `
+        <tr style="border-bottom: 1px solid #f1f5f9;">
+          <td style="padding: 12px; border-bottom: 1px solid #f1f5f9; ${title_style}">${title}</td>
+          <td style="padding: 12px; border-bottom: 1px solid #f1f5f9; color: #475569; vertical-align: top;">${rendered_text}</td>
+          <td style="padding: 12px; border-bottom: 1px solid #f1f5f9; text-align: right; vertical-align: top;">${count_badge}</td>
+        </tr>`;
+      }
+
+      let issueSummaryRows = '';
+      issueSummaryRows += format_js_row("⚠ MDM ON but No Data Received", "#ea580c", lists.mdm, lists.mdm.length, true, "#ffedd5", "#ea580c");
+      issueSummaryRows += format_js_row("⊘ No Data Reported", "#64748b", lists.inactive, lists.inactive.length);
+      issueSummaryRows += format_js_row("Motor Controller Temperature (Negative Values)", "#475569", lists.temp, lists.temp.length, false);
+      issueSummaryRows += format_js_row("✗ BMS / Motor Faults", "#dc2626", lists.bms, lists.bms.length, true, "#fee2e2", "#dc2626");
+      issueSummaryRows += format_js_row("Charging Issues (Plug State 4)", "#475569", lists.charging, lists.charging.length, false);
+      issueSummaryRows += format_js_row("✓ OK / No Issues", "#16a34a", lists.ok, lists.ok.length, true, "#dcfce7", "#16a34a");
+      issueSummaryRows += format_js_row("✗ Data Loss", "#dc2626", lists.data_loss, lists.data_loss.length, true, "#fee2e2", "#dc2626");
+
+      return `
+    ${buildCategoryTablesHTML(fleet)}
+    <!-- ISSUE SUMMARY SECTION -->
+    <tr id="issue-summary">
+      <td style="padding: 24px; border-top: 1px solid #e2e8f0;">
+        <table width="100%" border="0" cellpadding="0" cellspacing="0" style="border-bottom: 2px solid #f1f5f9; padding-bottom: 8px; margin-bottom: 16px;">
+          <tr>
+            <td style="vertical-align: middle;">
+              <h2 style="margin: 0; font-size: 18px; font-weight: 600; color: #0f172a;"> Issue Summary</h2>
+            </td>
+            <td style="text-align: right; font-size: 12px; color: #64748b; font-weight: 500; vertical-align: middle;">
+              <strong>Report Duration:</strong> ${globalDuration} (PDT)
+            </td>
+          </tr>
+        </table>
+        <p style="font-size: 13px; color: #64748b; margin-bottom: 16px;">
+          Vehicle issues compiled for the report duration.
+        </p>
+
+        <table width="100%" border="0" cellpadding="0" cellspacing="0" style="font-size: 13px; border: 1px solid #e2e8f0; border-radius: 6px; overflow: hidden;">
+          <thead>
+            <tr bgcolor="#f8fafc">
+              <th style="padding: 10px 12px; font-weight: 600; text-align: left; border-bottom: 2px solid #e2e8f0; color: #475569; width: 220px;">Issue Category</th>
+              <th style="padding: 10px 12px; font-weight: 600; text-align: left; border-bottom: 2px solid #e2e8f0; color: #475569;">Vehicles description</th>
+              <th style="padding: 10px 12px; font-weight: 600; text-align: right; border-bottom: 2px solid #e2e8f0; color: #475569; width: 70px;">Count</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${issueSummaryRows}
+            <tr>
+              <td style="padding: 12px; color: #0f172a; font-weight: 700;" colspan="2">Total Vehicles</td>
+              <td style="padding: 12px; text-align: right; color: #0f172a; font-weight: 700;">${Object.keys(fleet).length}</td>
+            </tr>
+          </tbody>
+        </table>
+      </td>
+    </tr>
+    `;
+    }
+
+    function buildIssueDetailTable(vin, val) {
+      const items = vehicleIssueItems(val);
+      if (!items.some(i => i.structured)) return "";
+      const cell = "padding: 8px 10px; border-bottom: 1px solid #e2e8f0; text-align: left; vertical-align: top;";
+      const head = "padding: 8px 10px; font-weight: 600; text-align: left; border-bottom: 1px solid #e2e8f0; color: #475569;";
+      let rows = "";
+      items.forEach((it, i) => {
+        const idx = String(i + 1).padStart(3, '0');
+        if (it.structured) {
+          let issueCell = `<strong style="color: #0f172a;">${escapeHtml(it.title)}</strong>`;
+          if (it.description) issueCell += `<br/><span style="color: #475569;">${escapeHtml(it.description)}</span>`;
+          if (it.reported_by) issueCell += `<br/><span style="color: #64748b; font-size: 10px;">Reported by: ${escapeHtml(it.reported_by)}</span>`;
+          const period = escapeHtml(it.period) || "—";
+          const occ = escapeHtml(it.occurrences) || "—";
+          const rca = escapeHtml(it.rca) || "—";
+          const team = escapeHtml(it.responsible_team) || "—";
+          const slot = escapeHtml(it.customer_feedback) || "—";
+          const grafana = it.grafana_url
+            ? `<a href="${escapeHtml(it.grafana_url)}" target="_blank" style="color: #2563eb; text-decoration: underline; font-weight: 600;">Open</a>`
+            : "—";
+          rows += `
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+              <td style="${cell} color: #0f172a; font-family: monospace;">${idx}</td>
+              <td style="${cell} color: #475569; font-weight: 600;">${it.component}</td>
+              <td style="${cell} color: #0f172a;">${issueCell}</td>
+              <td style="${cell} color: #475569;">${period}<br/><span style="color: #64748b; font-size: 10px;">Occurrences: ${occ}</span></td>
+              <td style="${cell}">${severityBadge(it.severity) || "—"}</td>
+              <td style="${cell} color: #475569;">${rca}<br/><span style="color: #64748b; font-size: 10px;">Team: ${team}</span></td>
+              <td style="${cell} color: #475569;">${slot}</td>
+              <td style="${cell}">${grafana}</td>
+            </tr>
+            `;
+        } else {
+          rows += `
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+              <td style="${cell} color: #0f172a; font-family: monospace;">${idx}</td>
+              <td style="${cell} color: #475569; font-weight: 600;">—</td>
+              <td style="${cell} color: #0f172a;">${it.title}</td>
+              <td style="${cell} color: #475569;">—</td>
+              <td style="${cell}">—</td>
+              <td style="${cell} color: #475569;">—</td>
+              <td style="${cell} color: #475569;">—</td>
+              <td style="${cell} color: #475569;">—</td>
+            </tr>
+            `;
+        }
+      });
+      return `
+                        <table width="100%" border="0" cellpadding="0" cellspacing="0" style="font-size: 11px; border: 1px solid #e2e8f0; border-radius: 6px; overflow: hidden;">
+                          <thead>
+                            <tr bgcolor="#f8fafc">
+                              <th style="${head} width: 40px;">ID</th>
+                              <th style="${head} width: 60px;">Component</th>
+                              <th style="${head}">Issue / Description</th>
+                              <th style="${head} width: 90px;">Period / Occurrences</th>
+                              <th style="${head} width: 70px;">Severity</th>
+                              <th style="${head} width: 100px;">RCA / Team</th>
+                              <th style="${head} width: 130px;">Customer Feedback</th>
+                              <th style="${head} width: 70px;">Grafana</th>
+                            </tr>
+                          </thead>
+                          <tbody style="background-color: #ffffff;">
+                            ${rows}
+                          </tbody>
+                        </table>
+    `;
+    }
+
     // ACTIVE SESSION VEHICLE LIST
     let activeFleet = {};
     let activeIssues = [];
     let currentMode = 'Autonomous';
     let currentStatus = 'healthy'; // 'healthy', 'unhealthy', 'inactive', 'mdm_issue'
 
-    // POPULATE PREDEFINED SEARCH LIST
-    window.onload = function() {
+    let SAVED_REPORTS = [];
+
+    // POPULATE PREDEFINED SEARCH LIST & INITIALIZE DASHBOARD
+    async function initOwnerDashboard() {
       populateSearchDropdown();
 
       // Initialize dynamic version fields
-      document.getElementById('versions-container').innerHTML = '';
-      addVersionRow('VT_BOX Version', '');
-      addVersionRow('VCU Firmware Version', '');
+      const vContainer = document.getElementById('versions-container');
+      if (vContainer && vContainer.children.length === 0) {
+        addVersionRow('VT_BOX Version', '');
+        addVersionRow('VCU Firmware Version', '');
+      }
 
       // Check database connection status on load
       checkDatabaseStatus();
 
+      // 1. Load from embedded JSON state script tag
       const scriptTag = document.getElementById('vehicles-json-state');
       if (scriptTag && scriptTag.textContent.trim()) {
         try {
           const parsed = JSON.parse(scriptTag.textContent.trim());
-          if (parsed && parsed.vehicles) {
+          if (parsed && parsed.vehicles && Object.keys(parsed.vehicles).length > 0) {
             activeFleet = parsed.vehicles;
             if (parsed.global_duration) {
               document.getElementById('global-duration-input').value = parsed.global_duration;
             }
-          } else {
-            activeFleet = parsed || {};
+            updateFleetListUI();
           }
-          updateFleetListUI();
         } catch (e) {
           console.error("Failed to parse embedded fleet data", e);
         }
       }
-    };
+
+      // 2. Fetch latest state from server to guarantee sync
+      fetch('/api/fleet_state')
+        .then(res => res.ok ? res.json() : null)
+        .then(data => {
+          if (data && data.vehicles && Object.keys(data.vehicles).length > 0) {
+            activeFleet = data.vehicles;
+            if (data.global_duration) {
+              document.getElementById('global-duration-input').value = data.global_duration;
+            }
+            updateFleetListUI();
+          }
+        })
+        .catch(err => {
+          console.warn("API fleet state sync note:", err);
+        });
+
+      // 3. Load saved report periods to populate period dropdown & delete options
+      await loadSavedReportsList();
+    }
+
+    async function loadSavedReportsList() {
+      try {
+        const res = await fetch('/api/reports');
+        if (!res.ok) return;
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          SAVED_REPORTS = data;
+          populateSavedPeriodsDropdown();
+        }
+      } catch (err) {
+        console.warn("Could not load saved reports list:", err);
+      }
+    }
+
+    function populateSavedPeriodsDropdown() {
+      const select = document.getElementById('saved-periods-select');
+      if (!select) return;
+      
+      const currentDuration = document.getElementById('global-duration-input').value.trim();
+      select.innerHTML = '<option value="">-- Choose a saved report period to load --</option>';
+      
+      let matched = false;
+      SAVED_REPORTS.forEach(report => {
+        const opt = document.createElement('option');
+        opt.value = report.range || report.id;
+        const vCount = report.vehicles_count || (report.vehicles ? Object.keys(report.vehicles).length : 0);
+        opt.textContent = `${report.range} (${report.label || 'Mission Report'} — ${vCount} Vehicles)`;
+        if (report.range && report.range.trim() === currentDuration) {
+          opt.selected = true;
+          matched = true;
+        }
+        select.appendChild(opt);
+      });
+      
+      updateDeleteButtonVisibility(matched);
+    }
+
+    function updateDeleteButtonVisibility(visible) {
+      const btn = document.getElementById('delete-period-btn');
+      if (btn) {
+        btn.style.display = visible ? 'inline-block' : 'none';
+      }
+    }
+
+    function onSelectSavedPeriod(rangeVal) {
+      if (!rangeVal) {
+        updateDeleteButtonVisibility(false);
+        return;
+      }
+
+      const report = SAVED_REPORTS.find(r => r.range === rangeVal || r.id === rangeVal);
+      if (!report) return;
+
+      document.getElementById('global-duration-input').value = report.range || rangeVal;
+      
+      if (report.vehicles && Object.keys(report.vehicles).length > 0) {
+        activeFleet = JSON.parse(JSON.stringify(report.vehicles));
+        updateFleetListUI();
+      }
+      
+      updateDeleteButtonVisibility(true);
+      saveStateToServer();
+    }
+
+    function onDurationInputChanged() {
+      const val = document.getElementById('global-duration-input').value.trim();
+      const select = document.getElementById('saved-periods-select');
+      const match = SAVED_REPORTS.find(r => r.range && r.range.trim().toLowerCase() === val.toLowerCase());
+      
+      if (match) {
+        if (select) select.value = match.range || match.id;
+        updateDeleteButtonVisibility(true);
+      } else {
+        if (select) select.value = "";
+        updateDeleteButtonVisibility(false);
+      }
+    }
+
+    function onDurationInputSaved() {
+      saveStateToServer();
+    }
+
+    async function deleteCurrentReportPeriod() {
+      const currentDuration = document.getElementById('global-duration-input').value.trim();
+      if (!currentDuration) return;
+
+      const report = SAVED_REPORTS.find(r => r.range && r.range.trim() === currentDuration);
+      const reportIdentifier = report ? report.id : currentDuration;
+
+      const confirmMsg = `⚠️ Are you sure you want to delete the mission report for period "${currentDuration}"?\n\nThis will remove it from both the Customer Dashboard and the database.`;
+      if (!confirm(confirmMsg)) return;
+
+      try {
+        const res = await fetch('/api/delete_report', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ report_id: reportIdentifier, range: currentDuration })
+        });
+
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({ message: 'Server error ' + res.status }));
+          throw new Error(errData.message || 'Failed to delete report');
+        }
+
+        alert(`✅ Mission report period "${currentDuration}" has been deleted.`);
+        
+        // Reload saved reports list
+        await loadSavedReportsList();
+        
+        // If there are other reports, select the first one; else clear
+        if (SAVED_REPORTS.length > 0) {
+          onSelectSavedPeriod(SAVED_REPORTS[0].range);
+        } else {
+          document.getElementById('global-duration-input').value = "";
+          updateDeleteButtonVisibility(false);
+        }
+      } catch (err) {
+        console.error("Error deleting report:", err);
+        alert("❌ Error deleting report: " + err.message);
+      }
+    }
+
+    window.addEventListener('DOMContentLoaded', initOwnerDashboard);
+    window.onload = initOwnerDashboard;
 
     // Check Database Status
     function checkDatabaseStatus() {
@@ -878,6 +1660,7 @@
       } else if (status === 'unhealthy') {
         document.getElementById('health-unhealthy').className = 'health-toggle-btn active-unhealthy';
         document.getElementById('issues-container').style.display = 'block';
+        document.getElementById('issues-container-label').textContent = 'Anomalies / Warnings Log';
         distanceInput.disabled = false;
         durationInput.disabled = false;
         if (distanceInput.value === 'Nil') distanceInput.value = '';
@@ -894,6 +1677,8 @@
       } else if (status === 'mdm_issue') {
         document.getElementById('health-mdm').className = 'health-toggle-btn active-mdm';
         document.getElementById('mdm-container').style.display = 'block';
+        document.getElementById('issues-container').style.display = 'block';
+        document.getElementById('issues-container-label').textContent = 'Issues Log (Optional for MDM Issue)';
         distanceInput.value = 'Nil';
         distanceInput.disabled = true;
         durationInput.disabled = false;
@@ -902,19 +1687,121 @@
     }
 
     // ISSUES MANAGEMENT
+    // Each issue: id, issue, description, period, occurrences, component,
+    // reported_by, severity, rca, responsible_team customer_feedback.
+    let editingIssueIndex = -1;
+
+    function newIssueId() {
+      return 'm' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+    }
+
+    function resetIssueForm() {
+      document.getElementById('issue-title-input').value = '';
+      document.getElementById('issue-description-input').value = '';
+      document.getElementById('issue-period-input').value = '';
+      document.getElementById('issue-occurrences-input').value = '';
+      document.getElementById('issue-component-select').value = 'Other';
+      document.getElementById('issue-severity-select').value = 'Medium';
+      document.getElementById('issue-reported-by-input').value = '';
+      document.getElementById('issue-team-input').value = '';
+      document.getElementById('issue-rca-input').value = '';
+      document.getElementById('issue-feedback-input').value = '';
+      document.getElementById('issue-grafana-input').value = '';
+      editingIssueIndex = -1;
+      document.getElementById('issue-add-btn').textContent = 'Add Issue';
+      document.getElementById('issue-cancel-btn').style.display = 'none';
+    }
+
     function addIssue() {
-      const issueInput = document.getElementById('issue-text-input');
-      const text = issueInput.value.trim();
-      if (!text) return;
-      
-      activeIssues.push(text);
-      issueInput.value = '';
+      const title = document.getElementById('issue-title-input').value.trim();
+      const description = document.getElementById('issue-description-input').value.trim();
+      if (!title) {
+        alert("Please enter the Issue title.");
+        document.getElementById('issue-title-input').focus();
+        return;
+      }
+      if (!description) {
+        alert("Please enter the Description of the issue.");
+        document.getElementById('issue-description-input').focus();
+        return;
+      }
+
+      const previous = editingIssueIndex >= 0 ? activeIssues[editingIssueIndex] : null;
+      const issue = {
+        id: previous ? previous.id : newIssueId(),
+        issue: title,
+        description: description,
+        period: document.getElementById('issue-period-input').value.trim(),
+        occurrences: document.getElementById('issue-occurrences-input').value.trim(),
+        component: document.getElementById('issue-component-select').value,
+        reported_by: document.getElementById('issue-reported-by-input').value.trim(),
+        severity: document.getElementById('issue-severity-select').value,
+        rca: document.getElementById('issue-rca-input').value.trim(),
+        responsible_team: document.getElementById('issue-team-input').value.trim(),
+        customer_feedback: document.getElementById('issue-feedback-input').value.trim(),
+        grafana_url: document.getElementById('issue-grafana-input').value.trim()
+      };
+
+      if (editingIssueIndex >= 0) {
+        activeIssues[editingIssueIndex] = issue;
+      } else {
+        activeIssues.push(issue);
+      }
+      resetIssueForm();
       renderIssuesList();
+    }
+
+    function editIssue(index) {
+      const issue = activeIssues[index];
+      if (!issue) return;
+      document.getElementById('issue-title-input').value = issue.issue || '';
+      document.getElementById('issue-description-input').value = issue.description || '';
+      document.getElementById('issue-period-input').value = issue.period || '';
+      document.getElementById('issue-occurrences-input').value = issue.occurrences || '';
+      document.getElementById('issue-component-select').value = ISSUE_COMPONENTS.includes(issue.component) ? issue.component : 'Other';
+      document.getElementById('issue-severity-select').value = ISSUE_SEVERITIES.includes(issue.severity) ? issue.severity : 'Medium';
+      document.getElementById('issue-reported-by-input').value = issue.reported_by || '';
+      document.getElementById('issue-team-input').value = issue.responsible_team || '';
+      document.getElementById('issue-rca-input').value = issue.rca || '';
+      document.getElementById('issue-feedback-input').value = issue.customer_feedback || '';
+      document.getElementById('issue-grafana-input').value = issue.grafana_url || '';
+      editingIssueIndex = index;
+      document.getElementById('issue-add-btn').textContent = 'Update Issue';
+      document.getElementById('issue-cancel-btn').style.display = 'inline-flex';
+      document.getElementById('issue-title-input').focus();
     }
 
     function removeIssue(index) {
       activeIssues.splice(index, 1);
+      if (editingIssueIndex === index) resetIssueForm();
+      else if (editingIssueIndex > index) editingIssueIndex--;
       renderIssuesList();
+    }
+
+    // Build the issue list of a saved vehicle (old vehicles only have plain-text issues)
+    function issuesFromVehicle(vehicle) {
+      const details = Array.isArray(vehicle.issue_details) ? vehicle.issue_details : [];
+      const titles = Array.isArray(vehicle.issues) ? vehicle.issues : [];
+      const count = details.length ? Math.max(details.length, titles.length) : titles.length;
+      const list = [];
+      for (let i = 0; i < count; i++) {
+        const d = (details[i] && typeof details[i] === 'object') ? details[i] : {};
+        list.push({
+          id: d.id || newIssueId(),
+          issue: d.issue || titles[i] || '',
+          description: d.description || '',
+          period: d.period || '',
+          occurrences: d.occurrences || '',
+          component: ISSUE_COMPONENTS.includes(d.component) ? d.component : '',
+          reported_by: d.reported_by || '',
+          severity: ISSUE_SEVERITIES.includes(d.severity) ? d.severity : '',
+          rca: d.rca || '',
+          responsible_team: d.responsible_team || '',
+          customer_feedback: d.customer_feedback || '',
+          grafana_url: d.grafana_url || ''
+        });
+      }
+      return list;
     }
 
     function renderIssuesList() {
@@ -922,10 +1809,24 @@
       listEl.innerHTML = '';
       activeIssues.forEach((issue, idx) => {
         const item = document.createElement('div');
-        item.className = 'issues-list-item';
+        item.className = 'issue-card';
+        item.style.borderLeftColor = SEVERITY_BORDERS[issue.severity] || '#e2e8f0';
+        let meta = '';
+        [['Description', 'description'], ['Period', 'period'], ['Occurrences', 'occurrences'],
+         ['Component', 'component'], ['Reported by', 'reported_by'], ['Severity', 'severity'],
+         ['RCA', 'rca'], ['Responsible team', 'responsible_team'],
+         ['Customer feedback', 'customer_feedback'], ['Grafana link', 'grafana_url']].forEach(([label, key]) => {
+          if (issue[key]) meta += `<div><span class="k">${label}:</span> ${escapeHtml(issue[key])}</div>`;
+        });
         item.innerHTML = `
-          <span>${issue}</span>
-          <button class="btn-danger" onclick="removeIssue(${idx})">Remove</button>
+          <div class="issue-card-header">
+            <div><strong>${escapeHtml(issue.issue)}</strong> ${severityBadge(issue.severity)}</div>
+            <div class="issue-card-actions">
+              <button class="btn-secondary" onclick="editIssue(${idx})">Edit</button>
+              <button class="btn-danger" onclick="removeIssue(${idx})">Remove</button>
+            </div>
+          </div>
+          <div class="issue-card-meta">${meta}</div>
         `;
         listEl.appendChild(item);
       });
@@ -964,9 +1865,11 @@
       
       document.getElementById('timestamp-input').value = '';
       document.getElementById('vt-box-time-input').value = '';
+      document.getElementById('grafana-url-input').value = '';
       setMode('Autonomous');
       setStatus('healthy');
       activeIssues = [];
+      resetIssueForm();
       renderIssuesList();
 
       // Reset Version details section
@@ -984,6 +1887,7 @@
       const duration = document.getElementById('duration-input').value.trim();
       let timestamp = document.getElementById('timestamp-input').value.trim();
       let vtBoxTime = document.getElementById('vt-box-time-input').value.trim();
+      let grafanaUrl = document.getElementById('grafana-url-input').value.trim();
 
       if (!vin) {
         alert("VIN is required.");
@@ -1005,10 +1909,28 @@
       if (!nickname) nickname = "Not Named";
       if (!location) location = "Not Available";
 
+      // An issue that was typed in the form but not added yet is added now,
+      // so it can never be lost silently (this is what makes the Component,
+      // e.g. MDM, appear in the report tables).
+      if ((currentStatus === 'unhealthy' || currentStatus === 'mdm_issue') && editingIssueIndex < 0 &&
+          (document.getElementById('issue-title-input').value.trim() ||
+           document.getElementById('issue-description-input').value.trim())) {
+        const before = activeIssues.length;
+        addIssue();                       // shows its own message if Issue/Description is missing
+        if (activeIssues.length === before) return;
+      }
+
       if (currentStatus === 'unhealthy' && activeIssues.length === 0) {
         alert("Please add at least one issue if status is set to Issues Detected.");
         return;
       }
+
+      if (editingIssueIndex >= 0) {
+        alert("You are editing an issue. Please click \"Update Issue\" (or \"Cancel Edit\") before saving the vehicle.");
+        return;
+      }
+
+      const hasIssueLog = (currentStatus === 'unhealthy' || currentStatus === 'mdm_issue');
 
       if (currentStatus === 'inactive' && !timestamp) {
         timestamp = "Not Available";
@@ -1036,9 +1958,11 @@
         location: location,
         mode: currentMode,
         status: currentStatus,
-        issues: (currentStatus === 'unhealthy') ? [...activeIssues] : [],
+        issues: hasIssueLog ? activeIssues.map(i => i.issue) : [],
+        issue_details: hasIssueLog ? activeIssues.map(i => ({...i})) : [],
         timestamp: (currentStatus === 'inactive') ? timestamp : '',
         vt_box_time: (currentStatus === 'mdm_issue') ? vtBoxTime : '',
+        grafana_url: grafanaUrl,
         distance: (currentStatus === 'inactive') ? 'Nil' : distance,
         duration: (currentStatus === 'inactive') ? 'Nil' : duration,
         versions: versions
@@ -1054,9 +1978,11 @@
       const vehicle = activeFleet[vin];
       if (!vehicle) return;
 
+      document.getElementById('search-input').value = vehicle.nickname ? `${vehicle.nickname} (${vehicle.vin})` : vehicle.vin;
       document.getElementById('vin-input').value = vehicle.vin;
       document.getElementById('nickname-input').value = vehicle.nickname;
       document.getElementById('location-input').value = vehicle.location;
+      document.getElementById('grafana-url-input').value = vehicle.grafana_url || '';
       
       setMode(vehicle.mode);
       setStatus(vehicle.status || 'healthy');
@@ -1093,11 +2019,11 @@
         distanceInput.disabled = false;
         durationInput.disabled = false;
         
-        if (vehicle.status === 'unhealthy') {
-          activeIssues = [...vehicle.issues];
-          renderIssuesList();
-        }
       }
+
+      resetIssueForm();
+      activeIssues = (vehicle.status === 'unhealthy' || vehicle.status === 'mdm_issue') ? issuesFromVehicle(vehicle) : [];
+      renderIssuesList();
       
       // Scroll to form panel
       document.querySelector('.panel').scrollIntoView({ behavior: 'smooth' });
@@ -1120,7 +2046,7 @@
       .then(response => {
         if (!response.ok) {
           return response.json().then(errData => {
-            throw new Error(errData.message || "Server error saving state");
+            throw new Error(errData.message || errData.detail || "Server error saving state");
           }).catch(() => {
             throw new Error("HTTP error " + response.status);
           });
@@ -1192,7 +2118,7 @@
         if (vehicle.status === 'healthy') {
           healthBadge = `<span class="badge badge-green">Healthy</span>`;
         } else if (vehicle.status === 'unhealthy') {
-          healthBadge = `<span class="badge badge-red">${vehicle.issues.length} Issues</span>`;
+          healthBadge = `<span class="badge badge-red">${(vehicle.issues || []).length} Issues</span>`;
         } else if (vehicle.status === 'inactive') {
           healthBadge = `<span class="badge badge-grey">Not Active</span>`;
         } else if (vehicle.status === 'mdm_issue') {
@@ -1203,6 +2129,7 @@
 
         const distStr = vehicle.status === 'inactive' ? 'Nil' : `${vehicle.distance} km`;
         const durStr = vehicle.status === 'inactive' ? 'Nil' : vehicle.duration;
+        const grafanaBadge = vehicle.grafana_url ? `<p style="margin-top: 4px; font-size: 11px;"><a href="${vehicle.grafana_url}" target="_blank" style="color: #2563eb; font-weight: 600; text-decoration: underline;">📊 Grafana Link ↗</a></p>` : '';
 
         item.innerHTML = `
           <div class="fleet-item-info">
@@ -1210,6 +2137,7 @@
             <p>Nick: <strong>${vehicle.nickname}</strong> | Loc: <strong>${vehicle.location}</strong></p>
             <p>Mode: ${modeBadge} | Status: ${healthBadge}</p>
             <p style="margin-top: 4px; font-size: 11px;">Dist: <strong>${distStr}</strong> | Dur: <strong>${durStr}</strong></p>
+            ${grafanaBadge}
           </div>
           <div class="fleet-item-actions">
             <button class="btn-secondary" onclick="editVehicle('${vehicle.vin}')">Edit</button>
@@ -1236,161 +2164,8 @@
         globalDuration = "Not Specified";
       }
 
-      function getShortNickname(nickname) {
-        let name = nickname.replace(/\s*Vehicle.*/i, '');
-        name = name.replace(/\s*\(.*?\)/g, '');
-        name = name.trim();
-        if (name === "US HC Fargo") return "USHC Fargo";
-        if (name === "US HC Yuba") return "USHC Yuba";
-        return name;
-      }
-
-      // Build Issue Summary Section
-      const old_software_vins = ["MD9GBUE27DC341048", "MD9GBUE29DC341066", "MD9GBUE27FC341022"];
-      const temp_anomaly_vins = ["MD9GBUE27DC341048", "MD9GBUE23DC341063", "MD9GBUE29DC341066", "MD9GBUE22DC341068", "MD9GBUE27DC341079", "MD9GBUE20DC341070", "MD9GBUE24DC341038"];
-      const vt_box_1171 = ["MD9GBUE29DC341066"];
-      const vt_box_1181 = ["MD9GBUE2XFC341001", "MD9GBUE23FC341003", "MD9GBUE29FC341006", "MD9GBUE24FC341009", "MD9GBUE22FC341011", "MD9GBUE26FC341013", "MD9GBUE28FC341014", "MD9GBUE23FC341017", "MD9GBUE23FC341020", "MD9GBUE29FC341023"];
-      const no_details_vins = ["MD9GBUE22DC341006", "MD9GBUE26DC341042"];
-
-      let mdm_list = [];
-      let inactive_list = [];
-      let old_software_list = [];
-      let temp_anomaly_list = [];
-      let bms_list = [];
-      let charging_list = [];
-      let ok_list = [];
-      let data_loss_list = [];
-      let vt_122_list = [];
-      let vt_1181_list = [];
-      let vt_1171_list = [];
-      let no_details_list = [];
-
-      vins.forEach(vin => {
-        const val = activeFleet[vin];
-        const nick = getShortNickname(val.nickname);
-        const issues = val.issues || [];
-        const issues_str = issues.join(", ");
-        
-        let link_color = "#dc2626";
-        if (val.status === 'healthy') link_color = "#16a34a";
-        else if (val.status === 'inactive') link_color = "#64748b";
-        else if (val.status === 'mdm_issue') link_color = "#ea580c";
-
-        const vehicle_link = `<strong><a href="#vin-${vin}" style="color: ${link_color}; text-decoration: none; font-weight: 600;">${nick}</a></strong>`;
-
-        if (val.status === 'mdm_issue') {
-          const desc = issues_str ? issues_str : `VT_BOX online: ${val.vt_box_time || 'Not Available'}`;
-          mdm_list.push(`${vehicle_link} (${vin}) — ${desc}.`);
-        } else if (val.status === 'inactive') {
-          inactive_list.push(`${vehicle_link} — Last updated ${val.timestamp || 'Not Available'}`);
-        } else if (val.status === 'unhealthy') {
-          if (issues.some(i => i.toLowerCase().includes("data loss"))) {
-            data_loss_list.push(`${vehicle_link} — ${issues_str}`);
-          } else {
-            if (issues.some(i => i.toLowerCase().includes("plug state 4") || i.toLowerCase().includes("charging"))) {
-              charging_list.push(`${vehicle_link} — ${issues_str}`);
-            } else {
-              bms_list.push(`${vehicle_link} — ${issues_str}`);
-            }
-          }
-        } else if (val.status === 'healthy') {
-          ok_list.push(`<a href="#vin-${vin}" style="color:#16a34a; font-weight:600; text-decoration:none;">${nick}</a>`);
-        }
-
-        if (old_software_vins.includes(vin)) old_software_list.push(nick);
-        if (temp_anomaly_vins.includes(vin)) temp_anomaly_list.push(nick);
-        
-        if (vt_box_1171.includes(vin)) vt_1171_list.push(nick);
-        else if (vt_box_1181.includes(vin)) vt_1181_list.push(nick);
-        else if (no_details_vins.includes(vin)) no_details_list.push(nick);
-        else vt_122_list.push(nick);
-      });
-
-      function format_js_row(title, color, text_list, count, is_bold=true, badge_bg=null, badge_color=null) {
-        if (!text_list || text_list.length === 0) {
-          if (title === "Charging Issues (Plug State 4)") {
-            return `
-            <tr style="border-bottom: 1px solid #f1f5f9;">
-              <td style="padding: 12px; border-bottom: 1px solid #f1f5f9; color: #475569; vertical-align: top;">Charging Issues (Plug State 4)</td>
-              <td style="padding: 12px; border-bottom: 1px solid #f1f5f9; color: #475569; vertical-align: top;">None reported</td>
-              <td style="padding: 12px; border-bottom: 1px solid #f1f5f9; text-align: right; vertical-align: top;"><span style="display: inline-block; padding: 4px 8px; font-size: 11px; font-weight: bold; border-radius: 12px; background-color: #f1f3f5; color: #475569;">0</span></td>
-            </tr>`;
-          }
-          return "";
-        }
-        let rendered_text = "";
-        if (["Old Software Version", "Motor Controller Temperature Anomaly (Negative Values)", "VT_BOX Version (1.2.2)", "VT_BOX Version (1.1.8.1)", "VT_BOX Version (1.1.7.1)"].includes(title)) {
-          rendered_text = text_list.join(", ");
-          if (title === "Old Software Version") {
-            rendered_text += ' <span style="color: #94a3b8;">(VCU 1.0.0 or earlier)</span>';
-          }
-        } else {
-          rendered_text = text_list.join(title === "✓ OK / No Issues" ? ", " : "<br/>");
-        }
-
-        let count_badge = "—";
-        if (count !== null) {
-          if (badge_bg && badge_color) {
-            count_badge = `<span style="display: inline-block; padding: 4px 8px; font-size: 11px; font-weight: bold; border-radius: 12px; background-color: ${badge_bg}; color: ${badge_color};">${count}</span>`;
-          } else {
-            count_badge = `<span style="display: inline-block; padding: 4px 8px; font-size: 11px; font-weight: bold; border-radius: 12px; background-color: #f1f3f5; color: #475569;">${count}</span>`;
-          }
-        }
-
-        const title_style = is_bold ? `color: ${color}; font-weight: 600; vertical-align: top;` : "color: #475569; vertical-align: top;";
-        return `
-        <tr style="border-bottom: 1px solid #f1f5f9;">
-          <td style="padding: 12px; border-bottom: 1px solid #f1f5f9; ${title_style}">${title}</td>
-          <td style="padding: 12px; border-bottom: 1px solid #f1f5f9; color: #475569; vertical-align: top;">${rendered_text}</td>
-          <td style="padding: 12px; border-bottom: 1px solid #f1f5f9; text-align: right; vertical-align: top;">${count_badge}</td>
-        </tr>`;
-      }
-
-      let issueSummaryRows = '';
-      issueSummaryRows += format_js_row("⚠ MDM ON but No Data Received", "#ea580c", mdm_list, mdm_list.length, true, "#ffedd5", "#ea580c");
-      issueSummaryRows += format_js_row("⊘ No Data Reported", "#64748b", inactive_list, inactive_list.length);
-      issueSummaryRows += format_js_row("Motor Controller Temperature Anomaly (Negative Values)", "#475569", temp_anomaly_list, temp_anomaly_list.length, false);
-      issueSummaryRows += format_js_row("✗ BMS / Motor Faults", "#dc2626", bms_list, bms_list.length, true, "#fee2e2", "#dc2626");
-      issueSummaryRows += format_js_row("Charging Issues (Plug State 4)", "#475569", charging_list, charging_list.length, false);
-      issueSummaryRows += format_js_row("✓ OK / No Issues", "#16a34a", ok_list, ok_list.length, true, "#dcfce7", "#16a34a");
-      issueSummaryRows += format_js_row("✗ Data Loss", "#dc2626", data_loss_list, data_loss_list.length, true, "#fee2e2", "#dc2626");
-
-      const issueSummaryHTML = `
-    <!-- ISSUE SUMMARY SECTION -->
-    <tr id="issue-summary">
-      <td style="padding: 24px; border-top: 1px solid #e2e8f0;">
-        <table width="100%" border="0" cellpadding="0" cellspacing="0" style="border-bottom: 2px solid #f1f5f9; padding-bottom: 8px; margin-bottom: 16px;">
-          <tr>
-            <td style="vertical-align: middle;">
-              <h2 style="margin: 0; font-size: 18px; font-weight: 600; color: #0f172a;"> Issue Summary</h2>
-            </td>
-            <td style="text-align: right; font-size: 12px; color: #64748b; font-weight: 500; vertical-align: middle;">
-              <strong>Report Duration:</strong> ${globalDuration} (PDT)
-            </td>
-          </tr>
-        </table>
-        <p style="font-size: 13px; color: #64748b; margin-bottom: 16px;">
-          Category-level breakdown of vehicle issues compiled for the report duration.
-        </p>
-
-        <table width="100%" border="0" cellpadding="0" cellspacing="0" style="font-size: 13px; border: 1px solid #e2e8f0; border-radius: 6px; overflow: hidden;">
-          <thead>
-            <tr bgcolor="#f8fafc">
-              <th style="padding: 10px 12px; font-weight: 600; text-align: left; border-bottom: 2px solid #e2e8f0; color: #475569; width: 220px;">Issue Category</th>
-              <th style="padding: 10px 12px; font-weight: 600; text-align: left; border-bottom: 2px solid #e2e8f0; color: #475569;">Affected Vehicles</th>
-              <th style="padding: 10px 12px; font-weight: 600; text-align: right; border-bottom: 2px solid #e2e8f0; color: #475569; width: 70px;">Count</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${issueSummaryRows}
-            <tr>
-              <td style="padding: 12px; color: #0f172a; font-weight: 700;" colspan="2">Total Vehicles</td>
-              <td style="padding: 12px; text-align: right; color: #0f172a; font-weight: 700;">${vins.length}</td>
-            </tr>
-          </tbody>
-        </table>
-      </td>
-    </tr>`;
+      // Build Issue Summary Section (+ Issue Category Summary and Data / Telemetry Issues tables)
+      const issueSummaryHTML = buildIssueSummaryHTML(activeFleet, globalDuration);
 
       // 1. Build summary rows
       let summaryRows = '';
@@ -1468,9 +2243,13 @@
             <div style="background-color: #fff7ed; border: 1px solid #ffedd5; border-radius: 6px; padding: 12px; color: #c2410c; font-size: 11px; font-weight: 500;">
               ⚠ MDM Issue: Monitoring flag is True, but no data came. VT_BOX came online at: <strong>${val.vt_box_time || 'Not Available'}</strong>
             </div>`;
+          const mdmDetailTable = buildIssueDetailTable(vin, val);
+          if (mdmDetailTable) anomaliesHTML += `<div style="margin-top: 8px;">${mdmDetailTable}</div>`;
+        } else if (buildIssueDetailTable(vin, val)) {
+          anomaliesHTML = buildIssueDetailTable(vin, val);
         } else {
           let rows = '';
-          val.issues.forEach((issue, idx) => {
+          (val.issues || []).forEach((issue, idx) => {
             rows += `
             <tr style="border-bottom: 1px solid #e2e8f0;">
               <td style="padding: 8px 10px; border-bottom: 1px solid #e2e8f0; color: #0f172a; font-family: monospace; text-align: left;">${String(idx+1).padStart(3, '0')}</td>
@@ -1521,13 +2300,21 @@
             <tr>
               <td>
                 <span style="font-size: 14px; font-weight: 700; color: #0f172a; font-family: Courier, monospace;">VIN: ${vin}</span>
-                <div style="font-size: 9px; color: #64748b; margin-top: 2px; line-height: 1.3;">Nickname: <strong>${val.nickname}</strong> &nbsp;|&nbsp; Location: <strong>${val.location}</strong></div>
+                <div style="font-size: 9px; color: #64748b; margin-top: 2px; line-height: 1.3;">Nickname: <strong><a href="#vin-${vin}" class="vehicle-link" style="color: #2563eb; text-decoration: underline; text-underline-offset: 3px; font-weight: 600; cursor: pointer;">${val.nickname}</a></strong> &nbsp;|&nbsp; Location: <strong>${val.location}</strong></div>
               </td>
               <td style="text-align: right; vertical-align: top;">
                 ${statusHeader}
               </td>
             </tr>
           </table>
+
+          ${val.grafana_url ? `
+            <div style="margin-bottom: 8px;">
+              <a href="${val.grafana_url}" target="_blank" style="display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; font-size: 10px; font-weight: 600; color: #ffffff; background-color: #ea580c; border-radius: 4px; text-decoration: none;">
+                <span>📊</span> Open Grafana Telemetry Dashboard ↗
+              </a>
+            </div>
+          ` : ''}
 
           <!-- Overview KPI blocks -->
           <table width="100%" border="0" cellpadding="0" cellspacing="0" style="margin-bottom: 8px;">
@@ -1611,6 +2398,30 @@
       margin: 0 0 10px 0;
       line-height: 1.5;
     }
+    @media only screen and (max-width: 620px) {
+      .stack-col {
+        display: block !important;
+        width: 100% !important;
+        padding: 0 0 16px 0 !important;
+        box-sizing: border-box !important;
+      }
+    }
+    .vehicle-link {
+      color: #2563eb;
+      text-decoration: underline;
+      text-underline-offset: 3px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .vehicle-link:hover {
+      color: #1d4ed8;
+      text-decoration-thickness: 2px;
+    }
+    .vehicle-link:focus-visible {
+      outline: 2px solid #2563eb;
+      outline-offset: 3px;
+      border-radius: 3px;
+    }
   </style>
 </head>
 <body style="margin: 0; padding: 20px 0; background-color: #f1f5f9; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
@@ -1620,8 +2431,8 @@
     <!-- HEADER -->
     <tr>
       <td bgcolor="#1e293b" style="padding: 30px 24px; text-align: center;">
-        <h1 style="margin: 0; color: #ffffff; font-size: 24px; font-weight: 700; letter-spacing: -0.5px;">Boson Motor</h1>
-        <p style="margin: 6px 0 0 0; color: #94a3b8; font-size: 14px; font-weight: 500;">Vehicle Dashboard &mdash; Static Customer Vehicles Mission Report</p>
+        <img src="/Boson_logo.png?v=20260826" alt="Boson Motor" style="height: 76px; width: auto; max-width: 320px; object-fit: contain; display: block; margin: 0 auto 14px auto;">
+        <p style="margin: 6px 0 0 0; color: #94a3b8; font-size: 14px; font-weight: 500;">Customer Vehicles Mission Report</p>
       </td>
     </tr>
 
@@ -1682,60 +2493,180 @@
       document.body.removeChild(link);
     }
 
+    // EXPORT ALL LOGGED ISSUES AS CSV (built by the server from the saved fleet state)
+    async function exportIssuesCSV() {
+      try {
+        const res = await fetch('/api/export_csv');
+        if (!res.ok) {
+          throw new Error('Server error ' + res.status);
+        }
+        const blob = await res.blob();
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = 'vehicle_issues_' + new Date().toISOString().slice(0, 10) + '.csv';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      } catch (err) {
+        alert("❌ Could not export the CSV file:\n" + err.message);
+      }
+    }
+
     function updateReportPreview() {
       const iframe = document.getElementById('report-preview-iframe');
       if (iframe) {
         iframe.srcdoc = getCompiledReportHTML();
       }
     }
+
+    // UPLOAD / ADD MISSION REPORT TO CUSTOMER PORTAL
+    async function uploadMissionReport() {
+      const vins = Object.keys(activeFleet);
+      if (vins.length === 0) {
+        alert("⚠️ Please add at least one vehicle to the customer fleet list before publishing.");
+        return;
+      }
+
+      const globalDuration = document.getElementById('global-duration-input').value.trim();
+      if (!globalDuration) {
+        alert("⚠️ Please specify the Global Report Duration Range (e.g. 01-08-2026 to 15-08-2026) before uploading.");
+        document.getElementById('global-duration-input').focus();
+        return;
+      }
+
+      const uploadBtn = document.getElementById('upload-mission-report-btn');
+      const originalText = uploadBtn.innerHTML;
+      uploadBtn.disabled = true;
+      uploadBtn.innerHTML = `
+        <span style="display:inline-block; animation: spin 1s linear infinite;">⏳</span>
+        Generating & Publishing Report...
+      `;
+
+      try {
+        const payload = {
+          global_duration: globalDuration,
+          vehicles: activeFleet
+        };
+
+        const response = await fetch('/api/publish_report', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) {
+          const errData = await response.json().catch(() => ({ message: 'Server error ' + response.status }));
+          throw new Error(errData.message || errData.detail || 'Failed to publish report');
+        }
+
+        const data = await response.json();
+        await loadSavedReportsList();
+        showPublishSuccessModal(data.report || {});
+      } catch (err) {
+        console.error("Error uploading report:", err);
+        alert("❌ Error publishing mission report:\n" + err.message);
+      } finally {
+        uploadBtn.disabled = false;
+        uploadBtn.innerHTML = originalText;
+      }
+    }
+
+    function showPublishSuccessModal(report) {
+      const modal = document.getElementById('publish-success-modal');
+      const metaEl = document.getElementById('publish-modal-meta');
+      
+      const vLabel = report.vehicles_label || `${Object.keys(activeFleet).length} Vehicles`;
+      const dateRange = report.range || document.getElementById('global-duration-input').value.trim();
+      const timeStr = report.timestamp || new Date().toLocaleString();
+      
+      metaEl.innerHTML = `
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px; font-size: 13px; text-align: left; display: flex; flex-direction: column; gap: 8px;">
+          <div><strong style="color: #475569;">Report Range:</strong> <span style="color: #0f172a; font-weight: 600;">${dateRange}</span></div>
+          <div><strong style="color: #475569;">Vehicles Included:</strong> <span style="color: #0f172a;">${vLabel}</span></div>
+          <div><strong style="color: #475569;">Published Timestamp:</strong> <span style="color: #0f172a;">${timeStr}</span></div>
+          <div><strong style="color: #475569;">Status:</strong> <span style="color: #16a34a; font-weight: 700;">✓ Live on Customer Portal</span></div>
+        </div>
+      `;
+      
+      modal.style.display = 'flex';
+    }
+
+    function closePublishModal() {
+      document.getElementById('publish-success-modal').style.display = 'none';
+    }
   </script>
 
   <!-- PERSISTENT STATE DATA (For loading if pre-saved) -->
   <script type="application/json" id="vehicles-json-state">
   {
-  "global_duration": "01-07-2026 to 31-07-2026",
+  "global_duration": "16-10-2026 to 31-10-2026",
   "vehicles": {
-    "MD9GBUE28DC341009": {
-      "vin": "MD9GBUE28DC341009",
-      "nickname": "Green HC(PST)",
-      "location": "PST",
+    "MD9GBUE23DC341063": {
+      "vin": "MD9GBUE23DC341063",
+      "nickname": "P6 Vehicle (14-12-2025)",
+      "location": "P26H+WR, Glenn, CA 95943, United States",
       "mode": "Non-Autonomous",
       "status": "inactive",
       "issues": [],
-      "timestamp": "09-12-2024",
+      "issue_details": [],
+      "timestamp": "on 22.09.2026(Location: P26H+WR, Glenn, CA 95943, United States)",
       "vt_box_time": "",
+      "grafana_url": "https://grafana.bosonmotors.com/d/e74b43a6-cf76-4e99-8d01-hgehehr/vehicle-support-team-developer?orgId=1&from=now-24h&to=now&timezone=browser&var-VIN=MD9GBUE23DC341063&var-NickName=P6%20Vehicle&var-Measurement1=bms_battery_weather&var-Measurement2=bms_battery_usage&var-FIELD1=auxilary_battery_voltage&var-Field2=battery_current&var-mc1_checksum=2513&var-mc2_checksum=AB4A&var-torque_or_speed_mode=Speed&var-bms_profile_checksum=ADE2&var-ccl_offset=0&var-ccl_scale_factor=1&var-dcl_scale_factor=1&var-timezone=IST%20UTC%2B5:30&viewPanel=panel-83",
       "distance": "Nil",
       "duration": "Nil",
       "versions": {
-        "VT_BOX Version": "",
-        "VCU Firmware Version": ""
+        "VT_BOX Version": "1.2.2",
+        "VCU Firmware Version": "2.2.0"
       }
     },
-    "MD9GBUE27DC341051": {
-      "vin": "MD9GBUE27DC341051",
-      "nickname": "P2 Vehicle",
-      "location": "Not Available",
+    "MD9GBUE2XDC341075": {
+      "vin": "MD9GBUE2XDC341075",
+      "nickname": "P18 Vehicle",
+      "location": "U.S",
       "mode": "Non-Autonomous",
-      "status": "inactive",
-      "issues": [],
-      "timestamp": "17-10-2024",
-      "vt_box_time": "",
+      "status": "mdm_issue",
+      "issues": [
+        "MDM is on but no data"
+      ],
+      "issue_details": [
+        {
+          "id": "mmv52altmj10p",
+          "issue": "MDM is on but no data",
+          "description": "The VT-Box/MDM came online on 27 October 2026, but no data was received.",
+          "period": "2 months",
+          "occurrences": "10 mins",
+          "component": "MDM",
+          "reported_by": "BVMC",
+          "severity": "Medium",
+          "rca": "application lunching issue",
+          "responsible_team": "Data Scouting",
+          "customer_feedback": "",
+          "grafana_url": "https://grafana.bosonmotors.com/d/e74b43a6-cf76-4e99-8d01-hgehehr/vehicle-support-team-developer?orgId=1&from=2026-10-15T07:00:00.000Z&to=2026-11-01T06:59:59.000Z&timezone=America%2FLos_Angeles&var-VIN=MD9GBUE2XDC341075&var-NickName=P18%20Vehicle&var-Measurement1=bms_battery_weather&var-Measurement2=bms_battery_usage&var-FIELD1=auxilary_battery_voltage&var-Field2=battery_current&var-mc1_checksum=&var-mc2_checksum=&var-torque_or_speed_mode=Speed&var-bms_profile_checksum=&var-ccl_offset=0&var-ccl_"
+        }
+      ],
+      "timestamp": "",
+      "vt_box_time": "27-10-2026",
+      "grafana_url": "https://grafana.bosonmotors.com/d/e74b43a6-cf76-4e99-8d01-hgehehr/vehicle-support-team-developer?orgId=1&from=2026-10-15T07:00:00.000Z&to=2026-11-01T06:59:59.000Z&timezone=America%2FLos_Angeles&var-VIN=MD9GBUE2XDC341075&var-NickName=P18%20Vehicle&var-Measurement1=bms_battery_weather&var-Measurement2=bms_battery_usage&var-FIELD1=auxilary_battery_voltage&var-Field2=battery_current&var-mc1_checksum=&var-mc2_checksum=&var-torque_or_speed_mode=Speed&var-bms_profile_checksum=&var-ccl_offset=0&var-ccl_scale_factor=1&var-dcl_scale_factor=1&var-timezone=PDT%20UTC-7&viewPanel=panel-110",
       "distance": "Nil",
-      "duration": "Nil",
+      "duration": "10 mins",
       "versions": {
-        "VT_BOX Version": "",
-        "VCU Firmware Version": ""
+        "VT_BOX Version": "nil",
+        "VCU Firmware Version": "nil"
       }
     },
-    "MD9GBUE22DC341054": {
-      "vin": "MD9GBUE22DC341054",
-      "nickname": "P3 Vehicle (P4 to P3)",
-      "location": "Not Available",
+    "MD9GBUE29DC341066": {
+      "vin": "MD9GBUE29DC341066",
+      "nickname": "P9 Vehicle",
+      "location": "South Willow Street, Ravenna, Fannin County, Texas, 75476, United States",
       "mode": "Non-Autonomous",
       "status": "inactive",
       "issues": [],
-      "timestamp": "23-12-2025",
+      "issue_details": [],
+      "timestamp": "2026-08-03 21:43:11(Location: South Willow Street, Ravenna, Fannin County, Texas, 75476, United States)",
       "vt_box_time": "",
+      "grafana_url": "https://grafana.bosonmotors.com/d/e74b43a6-cf76-4e99-8d01-hgehehr/vehicle-support-team-developer?orgId=1&from=2026-10-09T07:00:00.000Z&to=2026-10-10T06:59:59.000Z&timezone=America%2FLos_Angeles&var-VIN=MD9GBUE29DC341066&var-NickName=P9%20Vehicle&var-Measurement1=bms_battery_weather&var-Measurement2=bms_battery_usage&var-FIELD1=auxilary_battery_voltage&var-Field2=battery_current&var-mc1_checksum=&var-mc2_checksum=&var-torque_or_speed_mode=Speed&var-bms_profile_checksum=&var-ccl_offset=0&var-ccl_scale_factor=1&var-dcl_scale_factor=1&var-timezone=PDT%20UTC-7&viewPanel=panel-52",
       "distance": "Nil",
       "duration": "Nil",
       "versions": {
@@ -1746,157 +2677,88 @@
     "MD9GBUE28DC341057": {
       "vin": "MD9GBUE28DC341057",
       "nickname": "P4 Vehicle",
-      "location": "Not Available",
+      "location": "5636, Collier Canyon Road, Livermore, Alameda County, California, 94551, United States",
       "mode": "Non-Autonomous",
-      "status": "inactive",
+      "status": "healthy",
       "issues": [],
-      "timestamp": "11-06-2024",
-      "vt_box_time": "",
-      "distance": "Nil",
-      "duration": "Nil",
-      "versions": {
-        "VT_BOX Version": "1.2.2",
-        "VCU Firmware Version": "2.5.0",
-        "Mew Hardware": "2.2.0",
-        "mew_bootloader": "0.1.2"
-      }
-    },
-    "MD9GBUE23DC341063": {
-      "vin": "MD9GBUE23DC341063",
-      "nickname": "P6 Vehicle",
-      "location": "Yolo\u2013Colusa County, USA",
-      "mode": "Non-Autonomous",
-      "status": "unhealthy",
-      "issues": [
-        "BMS_High_voltage_isolation",
-        "RPDO Timeout on 15th & 16th"
-      ],
+      "issue_details": [],
       "timestamp": "",
       "vt_box_time": "",
-      "distance": "222.39KM",
-      "duration": "1 week",
+      "grafana_url": "https://grafana.bosonmotors.com/d/e74b43a6-cf76-4e99-8d01-hgehehr/vehicle-support-team-developer?orgId=1&from=2026-10-29T07:00:00.000Z&to=2026-10-30T06:59:59.000Z&timezone=America%2FLos_Angeles&var-VIN=MD9GBUE28DC341057&var-NickName=P4%20Vehicle&var-Measurement1=bms_battery_weather&var-Measurement2=bms_battery_usage&var-FIELD1=auxilary_battery_voltage&var-Field2=battery_current&var-mc1_checksum=A56A&var-mc2_checksum=0000&var-torque_or_speed_mode=Speed&var-bms_profile_checksum=ADD6&var-ccl_offset=0&var-ccl_scale_factor=1&var-dcl_scale_factor=1&var-timezone=PDT%20UTC-7",
+      "distance": "0.05",
+      "duration": "30 mins",
       "versions": {
         "VT_BOX Version": "1.2.2",
-        "VCU Firmware Version": "2.3.2"
-      }
-    },
-    "MD9GBUE29DC341066": {
-      "vin": "MD9GBUE29DC341066",
-      "nickname": "P9 Vehicle",
-      "location": "Not Available",
-      "mode": "Non-Autonomous",
-      "status": "inactive",
-      "issues": [],
-      "timestamp": "18.06.2026",
-      "vt_box_time": "",
-      "distance": "Nil",
-      "duration": "Nil",
-      "versions": {
-        "VT_BOX Version": "1.1.7.1",
-        "VCU Firmware Version": "2.2.0"
-      }
-    },
-    "MD9GBUE22DC341068": {
-      "vin": "MD9GBUE22DC341068",
-      "nickname": "P11 Vehicle(IST)",
-      "location": "Zoho Corporation, Tamil Nadu, India",
-      "mode": "Non-Autonomous",
-      "status": "unhealthy",
-      "issues": [
-        "SinCos Tracking Warning on 03rd"
-      ],
-      "timestamp": "",
-      "vt_box_time": "",
-      "distance": "119.01",
-      "duration": "2.14 days",
-      "versions": {
-        "VT_BOX Version": "1.2.2",
-        "VCU Firmware Version": "2.3.0",
-        "Mew Hardware": "2.1.0",
-        "Mew Bootloader": "Nil"
+        "VCU Firmware Version": "2.5.0"
       }
     },
     "MD9GBUE20DC341070": {
       "vin": "MD9GBUE20DC341070",
       "nickname": "P13 Vehicle",
-      "location": "Yolo Country, California, U.S",
+      "location": "16098, Road 43, Yolo County, California, 95637, United States",
       "mode": "Non-Autonomous",
-      "status": "unhealthy",
-      "issues": [
-        "BMS_open_wiring_fault on 26th & 27th"
-      ],
+      "status": "healthy",
+      "issues": [],
+      "issue_details": [],
       "timestamp": "",
       "vt_box_time": "",
-      "distance": "215.81",
-      "duration": "5.19 days",
+      "grafana_url": "",
+      "distance": "125.83",
+      "duration": "2.10 days",
       "versions": {
         "VT_BOX Version": "1.2.2",
-        "VCU Firmware Version": "2.3.2",
-        "Mew Hardware": "2.2.0",
-        "Mew bootloader": "Nil"
+        "VCU Firmware Version": "2.3.2"
       }
     },
     "MD9GBUE22DC341071": {
       "vin": "MD9GBUE22DC341071",
       "nickname": "P14 Vehicle",
-      "location": "Tulare County, California, U.S",
+      "location": "6624, Avenue 228, Tulare County, California, 93274, United States",
       "mode": "Non-Autonomous",
       "status": "healthy",
       "issues": [],
+      "issue_details": [],
       "timestamp": "",
       "vt_box_time": "",
-      "distance": "55.15",
-      "duration": "10.6 hours",
+      "grafana_url": "",
+      "distance": "81.88",
+      "duration": "1.61 days",
       "versions": {
         "VT_BOX Version": "1.2.2",
-        "VCU Firmware Version": "2.3.2",
-        "Mew Hardware": "2.2.0",
-        "Mew Boothloader": "Nil"
+        "VCU Firmware Version": "2.3.2"
       }
     },
     "MD9GBUE28DC341074": {
       "vin": "MD9GBUE28DC341074",
       "nickname": "P17 Vehicle",
-      "location": "Mountain View, California, USA",
+      "location": "2934, Falcon Drive, Madera, Madera County, California, 93637, United States",
       "mode": "Non-Autonomous",
       "status": "healthy",
       "issues": [],
+      "issue_details": [],
       "timestamp": "",
       "vt_box_time": "",
-      "distance": "2.23",
-      "duration": "36.1 min",
+      "grafana_url": "",
+      "distance": "3.73",
+      "duration": "11.2 hours",
       "versions": {
-        "VT_BOX Version": "1.2.2",
-        "VCU Firmware Version": "2.3.2"
-      }
-    },
-    "MD9GBUE2XDC341075": {
-      "vin": "MD9GBUE2XDC341075",
-      "nickname": "P18 Vehicle",
-      "location": "Zerker Road, Shafter, Kern County, California, United States",
-      "mode": "Non-Autonomous",
-      "status": "mdm_issue",
-      "issues": [],
-      "timestamp": "",
-      "vt_box_time": "29-07-2026",
-      "distance": "Nil",
-      "duration": "15 mins",
-      "versions": {
-        "VT_BOX Version": "1.2.2",
-        "VCU Firmware Version": "2.3.2"
+        "VT_BOX Version": "2.3.2",
+        "VCU Firmware Version": "1.2.2"
       }
     },
     "MD9GBUE23DC341077": {
       "vin": "MD9GBUE23DC341077",
       "nickname": "P20 Vehicle",
-      "location": "Yolo Country, California, U.S",
+      "location": "16098, Road 43, Yolo County, California, 95637, United States",
       "mode": "Non-Autonomous",
       "status": "healthy",
       "issues": [],
+      "issue_details": [],
       "timestamp": "",
       "vt_box_time": "",
-      "distance": "294.24",
-      "duration": "3.42 days",
+      "grafana_url": "",
+      "distance": "198.88",
+      "duration": "4.08 days",
       "versions": {
         "VT_BOX Version": "1.2.2",
         "VCU Firmware Version": "2.3.2"
@@ -1905,112 +2767,103 @@
     "MD9GBUE25DC341078": {
       "vin": "MD9GBUE25DC341078",
       "nickname": "P21 Vehicle",
-      "location": "University Avenue, University, Riverside County, California, U.S",
+      "location": "2934, Falcon Drive, Madera, Madera County, California, 93637, United States",
       "mode": "Non-Autonomous",
       "status": "healthy",
       "issues": [],
+      "issue_details": [],
       "timestamp": "",
       "vt_box_time": "",
-      "distance": "25.27",
-      "duration": "2.13 hours",
+      "grafana_url": "",
+      "distance": "1.29",
+      "duration": "5 mins",
       "versions": {
         "VT_BOX Version": "1.2.2",
         "VCU Firmware Version": "2.3.2"
-      }
-    },
-    "MD9GBUE27DC341079": {
-      "vin": "MD9GBUE27DC341079",
-      "nickname": "P22 Vehicle",
-      "location": "Not Available",
-      "mode": "Non-Autonomous",
-      "status": "inactive",
-      "issues": [],
-      "timestamp": "02-05-2025 21:47:54",
-      "vt_box_time": "",
-      "distance": "Nil",
-      "duration": "Nil",
-      "versions": {
-        "VT_BOX Version": "",
-        "VCU Firmware Version": ""
       }
     },
     "MD9GBUE23DC341080": {
       "vin": "MD9GBUE23DC341080",
       "nickname": "P23 Vehicle",
-      "location": "Hidalgo County, Texas, 78549, United States",
+      "location": "FM 493, Hargill, Hidalgo County, Texas, 78549, United States",
       "mode": "Non-Autonomous",
       "status": "unhealthy",
       "issues": [
-        "high_voltage_isolation_fault"
+        "High_voltage_isolation_fault"
+      ],
+      "issue_details": [
+        {
+          "id": "mmv9d9xx21ktt",
+          "issue": "High_voltage_isolation_fault",
+          "description": "The BMS detects low electrical isolation between the high-voltage battery system and the vehicle chassis, potentially due to moisture, damaged cables, or an internal component fault.",
+          "period": "4 months",
+          "occurrences": "Continous",
+          "component": "BMS",
+          "reported_by": "BVMC",
+          "severity": "Low",
+          "rca": "Inspect the battery enclosure, contactor box, and motor controller areas for water, coolant leaks, or condensation.",
+          "responsible_team": "PTE",
+          "customer_feedback": "US Citrus/Mani Skaria - have not heard back (Reported by - BRYCE TELFER)",
+          "grafana_url": "https://grafana.bosonmotors.com/d/e74b43a6-cf76-4e99-8d01-hgehehr/vehicle-support-team-developer?orgId=1&from=2026-10-15T07:00:00.000Z&to=2026-11-01T06:59:59.000Z&timezone=America%2FLos_Angeles&var-VIN=MD9GBUE23DC341080&var-NickName=P23%20Vehicle&var-Measurement1=bms_battery_weather&var-Measurement2=bms_battery_usage&var-FIELD1=auxilary_battery_voltage&var-Field2=battery_current&var-mc1_checksum=2513&var-mc2_checksum=AB4A&var-torque_or_speed_mode=Speed&var-bms_profile_checksum=ADE2&var-ccl_offse"
+        }
       ],
       "timestamp": "",
       "vt_box_time": "",
-      "distance": "194.11",
-      "duration": "1.29 weeks",
+      "grafana_url": "https://grafana.bosonmotors.com/d/e74b43a6-cf76-4e99-8d01-hgehehr/vehicle-support-team-developer?orgId=1&from=2026-10-15T07:00:00.000Z&to=2026-11-01T06:59:59.000Z&timezone=America%2FLos_Angeles&var-VIN=MD9GBUE23DC341080&var-NickName=P23%20Vehicle&var-Measurement1=bms_battery_weather&var-Measurement2=bms_battery_usage&var-FIELD1=auxilary_battery_voltage&var-Field2=battery_current&var-mc1_checksum=2513&var-mc2_checksum=AB4A&var-torque_or_speed_mode=Speed&var-bms_profile_checksum=ADE2&var-ccl_offset=0&var-ccl_scale_factor=1&var-dcl_scale_factor=1&var-timezone=PDT%20UTC-7&viewPanel=panel-35",
+      "distance": "69.85",
+      "duration": "2.50 days",
       "versions": {
         "VT_BOX Version": "1.2.2",
-        "VCU Firmware Version": "2.3.0",
-        "Mew Hardware": "2.2.0",
-        "Mew Bootloader": "0.1.2"
+        "VCU Firmware Version": "2.3.0"
       }
     },
     "MD9GBUE27DC341082": {
       "vin": "MD9GBUE27DC341082",
       "nickname": "P25 Vehicle",
-      "location": "Near Greenville, Hunt County, Texas, USA",
+      "location": "Cedar Hill Circle, Milligan, Collin County, Texas, 75407, United States",
       "mode": "Non-Autonomous",
-      "status": "mdm_issue",
+      "status": "healthy",
       "issues": [],
+      "issue_details": [],
       "timestamp": "",
-      "vt_box_time": "Location data came on 28-07-2026",
-      "distance": "Nil",
-      "duration": "2 mins",
-      "versions": {
-        "VT_BOX Version": "1.2.2",
-        "VCU Firmware Version": "2.3.2"
-      }
-    },
-    "MD9GBUE2XFC341001": {
-      "vin": "MD9GBUE2XFC341001",
-      "nickname": "P26 Vehicle",
-      "location": "Fresno Avenue, Shafter, Kern County, California, USA",
-      "mode": "Non-Autonomous",
-      "status": "inactive",
-      "issues": [],
-      "timestamp": "23.02.2026",
       "vt_box_time": "",
-      "distance": "Nil",
-      "duration": "Nil",
+      "grafana_url": "",
+      "distance": "0",
+      "duration": "0s",
       "versions": {
-        "VT_BOX Version": "1.1.8.1",
-        "VCU Firmware Version": "2.3.0"
+        "VT_BOX Version": "nil",
+        "VCU Firmware Version": "2.3.2"
       }
     },
     "MD9GBUE21FC341002": {
       "vin": "MD9GBUE21FC341002",
       "nickname": "P27 Vehicle",
-      "location": "Elk Grove High School, Fontana Court, Sacramento County, California, U.S",
+      "location": "C222+222 Carbondale, California, USA",
       "mode": "Non-Autonomous",
-      "status": "healthy",
+      "status": "inactive",
       "issues": [],
-      "timestamp": "",
+      "issue_details": [],
+      "timestamp": "14-09-2026(Location: C222+222 Carbondale, California, USA)",
       "vt_box_time": "",
-      "distance": "46.14",
-      "duration": "1.10 day",
+      "grafana_url": "https://grafana.bosonmotors.com/d/e74b43a6-cf76-4e99-8d01-hgehehr/vehicle-support-team-developer?orgId=1&from=2026-09-14T07:00:00.000Z&to=2026-09-15T06:59:59.000Z&timezone=America%2FLos_Angeles&var-VIN=MD9GBUE21FC341002&var-NickName=P27%20Vehicle&var-Measurement1=bms_battery_weather&var-Measurement2=bms_battery_usage&var-FIELD1=auxilary_battery_voltage&var-Field2=battery_current&var-mc1_checksum=2513&var-mc2_checksum=AB4A&var-torque_or_speed_mode=Speed&var-bms_profile_checksum=ADE2&var-ccl_offset=0&var-ccl_scale_factor=1&var-dcl_scale_factor=1&var-timezone=PDT%20UTC-7&viewPanel=panel-52",
+      "distance": "Nil",
+      "duration": "Nil",
       "versions": {
-        "VT_BOX Version": "1.2.2",
+        "VT_BOX Version": "nil",
         "VCU Firmware Version": "2.3.2"
       }
     },
     "MD9GBUE23FC341003": {
       "vin": "MD9GBUE23FC341003",
       "nickname": "P28 Vehicle",
-      "location": "Rio Arriba County, New Mexico, U.S",
+      "location": "County Road 379, Rio Arriba County, New Mexico, United States",
       "mode": "Non-Autonomous",
       "status": "inactive",
       "issues": [],
-      "timestamp": "27.06.2026",
+      "issue_details": [],
+      "timestamp": "County Road 379, Rio Arriba County, New Mexico, United States only location data came on 11.10.2026",
       "vt_box_time": "",
+      "grafana_url": "https://grafana.bosonmotors.com/d/e74b43a6-cf76-4e99-8d01-hgehehr/vehicle-support-team-developer?orgId=1&from=now-24h&to=now&timezone=browser&var-VIN=MD9GBUE23FC341003&var-NickName=P28%20Vehicle&var-Measurement1=bms_battery_weather&var-Measurement2=bms_battery_usage&var-FIELD1=auxilary_battery_voltage&var-Field2=battery_current&var-mc1_checksum=0x2513&var-mc2_checksum=0xAB4A&var-torque_or_speed_mode=Speed&var-bms_profile_checksum=0xA1ED&var-ccl_offset=-20&var-ccl_scale_factor=2&var-dcl_scale_factor=2&var-timezone=IST%20UTC%2B5:30&viewPanel=panel-52",
       "distance": "Nil",
       "duration": "Nil",
       "versions": {
@@ -2021,334 +2874,307 @@
     "MD9GBUE25FC341004": {
       "vin": "MD9GBUE25FC341004",
       "nickname": "P29 Vehicle",
-      "location": "Batesville, Zavala County, Texas, United States",
+      "location": "774, County Road 1005B, Batesville, Zavala County, Texas, 78829, United States",
       "mode": "Non-Autonomous",
-      "status": "unhealthy",
-      "issues": [
-        "epas level 3 on 10th time 15:00:00",
-        "epas level 2 on 10th time 17:00:00"
-      ],
+      "status": "healthy",
+      "issues": [],
+      "issue_details": [],
       "timestamp": "",
       "vt_box_time": "",
-      "distance": "294.25",
-      "duration": "4.38 days",
+      "grafana_url": "",
+      "distance": "332.95",
+      "duration": "4.40 days",
       "versions": {
         "VT_BOX Version": "1.2.2",
-        "VCU Firmware Version": "2.2.0",
-        "VIN_Number": "Missing",
-        "Mem Harware": "2.20",
-        "Mew Bootloader": "0.1.2"
+        "VCU Firmware Version": "2.2.0"
       }
     },
     "MD9GBUE27FC341005": {
       "vin": "MD9GBUE27FC341005",
       "nickname": "P30 Vehicle",
-      "location": "Mockingbird Hill, Calaveras County, California, U.S",
+      "location": "1103, Mockingbird Hill, Calaveras County, California, 95252, United States",
       "mode": "Non-Autonomous",
-      "status": "unhealthy",
-      "issues": [
-        "High_voltage_isolation_voltage",
-        "High Capacitor Cut"
-      ],
+      "status": "healthy",
+      "issues": [],
+      "issue_details": [],
       "timestamp": "",
       "vt_box_time": "",
-      "distance": "35.93",
-      "duration": "7.62 hours",
+      "grafana_url": "",
+      "distance": "4.09",
+      "duration": "53.5 mins",
       "versions": {
         "VT_BOX Version": "1.2.2",
-        "VCU Firmware Version": "2.2.0",
-        "MC2 Firmware": "Nil",
-        "mew_bootloader_firmware_version": "0.1.2"
+        "VCU Firmware Version": "2.20"
       }
     },
     "MD9GBUE29FC341006": {
       "vin": "MD9GBUE29FC341006",
       "nickname": "P31 Vehicle",
-      "location": "You Bet, Nevada County, California, U.S",
+      "location": "17007, You Bet Road, You Bet, Nevada County, California, 95945, United States",
       "mode": "Non-Autonomous",
       "status": "inactive",
       "issues": [],
-      "timestamp": "14-06-2026",
+      "issue_details": [],
+      "timestamp": "30-09-2026(Location: 17007, You Bet Road, You Bet, Nevada County, California, 95945, United States)",
       "vt_box_time": "",
+      "grafana_url": "https://grafana.bosonmotors.com/d/e74b43a6-cf76-4e99-8d01-hgehehr/vehicle-support-team-developer?orgId=1&from=2026-10-03T07:00:00.000Z&to=2026-10-08T06:59:59.000Z&timezone=America%2FLos_Angeles&var-VIN=MD9GBUE29FC341006&var-NickName=P31%20Vehicle&var-Measurement1=bms_battery_weather&var-Measurement2=bms_battery_usage&var-FIELD1=auxilary_battery_voltage&var-Field2=battery_current&var-mc1_checksum=&var-mc2_checksum=&var-torque_or_speed_mode=Speed&var-bms_profile_checksum=&var-ccl_offset=0&var-ccl_scale_factor=1&var-dcl_scale_factor=1&var-timezone=PDT%20UTC-7&viewPanel=panel-52",
       "distance": "Nil",
       "duration": "Nil",
       "versions": {
-        "VT_BOX Version": "1.1.8.1",
-        "VCU Firmware Version": "2.3.2"
+        "VT_BOX Version": "Nil",
+        "VCU Firmware Version": "Nil"
       }
     },
     "MD9GBUE20FC341007": {
       "vin": "MD9GBUE20FC341007",
       "nickname": "P32 Vehicle",
-      "location": "County Road 1005B, Batesville, Zavala County, Texas, United States",
+      "location": "774, County Road 1005B, Batesville, Zavala County, Texas, 78829, United States",
       "mode": "Non-Autonomous",
-      "status": "unhealthy",
-      "issues": [
-        "DSP Overcurrent Fault on 21th & 22nd",
-        "DSP Power frame fault on 22nd & 25th",
-        "DSP Encoder Fault on 24th & 28th",
-        "RPDO Timeout on 01th & 28th",
-        "DSP Control Fault on 25th",
-        "fault enumeration level 3 on 10th"
-      ],
+      "status": "healthy",
+      "issues": [],
+      "issue_details": [],
       "timestamp": "",
       "vt_box_time": "",
-      "distance": "294.39",
-      "duration": "4.16 days",
+      "grafana_url": "",
+      "distance": "194.13",
+      "duration": "1.88 days",
       "versions": {
-        "VT_BOX Version": "1.2.2",
-        "VCU Firmware Version": "2.2.0",
-        "VIN_Number": "Nil",
-        "Mew Hardware": "2.2.0",
-        "Mew_Bootloader": "0.1.2"
+        "VT_BOX Version": "2.2.0",
+        "VCU Firmware Version": "1.2.2"
       }
     },
     "MD9GBUE22FC341008": {
       "vin": "MD9GBUE22FC341008",
       "nickname": "P33 Vehicle",
-      "location": "Batesville, Zavala County, Texas, 78829, United States",
+      "location": "774, County Road 1005B, Batesville, Zavala County, Texas, 78829, United States",
       "mode": "Non-Autonomous",
       "status": "inactive",
       "issues": [],
-      "timestamp": "28.04.2026",
+      "issue_details": [],
+      "timestamp": "09-09-2026(Location: 774, County Road 1005B, Batesville, Zavala County, Texas, 78829, United States)",
       "vt_box_time": "",
+      "grafana_url": "https://grafana.bosonmotors.com/d/e74b43a6-cf76-4e99-8d01-hgehehr/vehicle-support-team-developer?orgId=1&from=2026-10-26T13:38:04.765Z&to=2026-10-26T18:02:16.089Z&timezone=America%2FLos_Angeles&var-VIN=MD9GBUE22FC341008&var-NickName=P33%20Vehicle&var-Measurement1=bms_battery_weather&var-Measurement2=bms_battery_usage&var-FIELD1=auxilary_battery_voltage&var-Field2=battery_current&var-mc1_checksum=&var-mc2_checksum=&var-torque_or_speed_mode=Speed&var-bms_profile_checksum=&var-ccl_offset=0&var-ccl_scale_factor=1&var-dcl_scale_factor=1&var-timezone=PDT%20UTC-7&viewPanel=panel-52",
       "distance": "Nil",
       "duration": "Nil",
       "versions": {
-        "VT_BOX Version": "1.1.8_1",
-        "VCU Firmware Version": "2.2.0"
+        "VT_BOX Version": "Nil",
+        "VCU Firmware Version": "Nil"
       }
     },
     "MD9GBUE24FC341009": {
       "vin": "MD9GBUE24FC341009",
       "nickname": "P34 Vehicle",
-      "location": "Avenue, Bakersfield, Kern County, California, United States",
+      "location": "Avenue, Bakersfield, Kern County, U.S",
       "mode": "Non-Autonomous",
       "status": "inactive",
       "issues": [],
-      "timestamp": "28-04-2026",
+      "issue_details": [],
+      "timestamp": "28-04-2026 (Location: Avenue, Bakersfield, Kern County, U.S)",
       "vt_box_time": "",
+      "grafana_url": "",
       "distance": "Nil",
       "duration": "Nil",
       "versions": {
-        "VT_BOX Version": "1.1.8_1",
-        "VCU Firmware Version": "2.2.0",
-        "Mew Hardware": "2.2.0",
-        "Mew_bootloader": "0.1.2"
+        "VT_BOX Version": "nil",
+        "VCU Firmware Version": "nil"
       }
     },
     "MD9GBUE20FC341010": {
       "vin": "MD9GBUE20FC341010",
       "nickname": "P35 Vehicle",
-      "location": "East North Avenue, Fresno County, California, United States",
+      "location": "East North Avenue, Fresno, Fresno County, California, 93725, United States",
       "mode": "Non-Autonomous",
       "status": "healthy",
       "issues": [],
+      "issue_details": [],
       "timestamp": "",
       "vt_box_time": "",
-      "distance": "59.12",
-      "duration": "10.2 hours",
+      "grafana_url": "",
+      "distance": "36.33",
+      "duration": "10.8 hours",
       "versions": {
         "VT_BOX Version": "1.2.2",
-        "VCU Firmware Version": "2.3.2",
-        "Mew Hardware": "2.2.0",
-        "mew_bootloader": "0.1.2",
-        "VIN_Number": "missing"
-      }
-    },
-    "MD9GBUE22FC341011": {
-      "vin": "MD9GBUE22FC341011",
-      "nickname": "P36 Vehicle",
-      "location": "San Francisco Peninsula, California, USA",
-      "mode": "Non-Autonomous",
-      "status": "inactive",
-      "issues": [],
-      "timestamp": "09-12-2025",
-      "vt_box_time": "",
-      "distance": "Nil",
-      "duration": "Nil",
-      "versions": {
-        "VT_BOX Version": "1.1.8_1",
-        "VCU Firmware Version": "2.3.2",
-        "Mew Hardware": "2.2.0",
-        "Mew Bootloader": "0.1.2"
+        "VCU Firmware Version": "2.3.2"
       }
     },
     "MD9GBUE24FC341012": {
       "vin": "MD9GBUE24FC341012",
       "nickname": "P37 Vehicle",
-      "location": "Alvarado High School, South Parkway Drive, Alvarado, Johnson County, Texas, United States",
+      "location": "Atascosa County, Texas, United States",
       "mode": "Non-Autonomous",
-      "status": "unhealthy",
-      "issues": [
-        "Epas Level - 2 on 17th"
-      ],
+      "status": "healthy",
+      "issues": [],
+      "issue_details": [],
       "timestamp": "",
       "vt_box_time": "",
-      "distance": "73.25",
-      "duration": "2.63 days",
+      "grafana_url": "",
+      "distance": "45.85",
+      "duration": "1.14 days",
       "versions": {
         "VT_BOX Version": "1.2.2",
-        "VCU Firmware Version": "2.2.0",
-        "Mew Hardware": "2.2.0",
-        "Mew Bootloader": "0.1.2"
+        "VCU Firmware Version": "2.2.0"
       }
     },
     "MD9GBUE26FC341013": {
       "vin": "MD9GBUE26FC341013",
       "nickname": "P38 Vehicle",
-      "location": "San Joaquin Valley, Central California, USA",
+      "location": "Avenue 295, Tulare County, California, 93221, United States",
       "mode": "Non-Autonomous",
       "status": "unhealthy",
       "issues": [
-        "Epas level 1 on 7th, 12th, 17th & 27th",
-        "Epas level 2 on 30th"
+        "Unit in preoperational & RPDO Timeout (drive inhibit)"
+      ],
+      "issue_details": [
+        {
+          "id": "mmvaqo8t5i0a8",
+          "issue": "Unit in preoperational & RPDO Timeout (drive inhibit)",
+          "description": "Unit in preoperational on 2026-10-16 11:47:19, 2026-10-19 08:07:12 & 2026-10-20 15:21:54 and RPDO Timeout (drive inhibit) on 2026-10-02 11:47:06 & 13:45:07",
+          "period": "multiple times",
+          "occurrences": "4 time",
+          "component": "Motor",
+          "reported_by": "BVMC",
+          "severity": "Low",
+          "rca": "The key position was observed to be in Position 2 while the vehicle was in motion. It is suspected that the driver may have changed the key position while driving, which could have resulted in a sudden change in vehicle behaviour and triggered the issue. The PTE team also observed that the throttle input was triggered during the key ON/OFF operation.",
+          "responsible_team": "PTE",
+          "customer_feedback": "Linder Equipment Co. - Troy reported no issues (Bryce Telfer)",
+          "grafana_url": "https://grafana.bosonmotors.com/d/e74b43a6-cf76-4e99-8d01-bmsHMIV2/bvmc-team-vtbox-data-dashboard-developer?orgId=1&var-VIN=MD9GBUE26FC341013&from=2026-10-16T07:00:00.000Z&to=2026-10-17T06:59:59.000Z&timezone=America%2FLos_Angeles&var-Measurement1=bms_battery_weather&var-Measurement2=controller_motor_status_1_REAR&var-FIELD1=auxilary_battery_voltage&var-Field2=motorcontroller_1_distance_travelled&var-torque_or_speed_mode=Speed&var-mc1_checksum=2513&var-mc2_checksum=AB4A&var-bms_profile_checksum="
+        }
       ],
       "timestamp": "",
       "vt_box_time": "",
-      "distance": "258.84",
-      "duration": "3.66 days",
+      "grafana_url": "https://grafana.bosonmotors.com/d/e74b43a6-cf76-4e99-8d01-bmsHMIV2/bvmc-team-vtbox-data-dashboard-developer?orgId=1&var-VIN=MD9GBUE26FC341013&from=2026-10-16T07:00:00.000Z&to=2026-10-17T06:59:59.000Z&timezone=America%2FLos_Angeles&var-Measurement1=bms_battery_weather&var-Measurement2=controller_motor_status_1_REAR&var-FIELD1=auxilary_battery_voltage&var-Field2=motorcontroller_1_distance_travelled&var-torque_or_speed_mode=Speed&var-mc1_checksum=2513&var-mc2_checksum=AB4A&var-bms_profile_checksum=ADE2&var-ccl_offset=0&var-ccl_scale_factor=1&var-dcl_scale_factor=1&var-timezone=PDT%20UTC-7&var-aggregation_method=MODE%28&var-groupbycondition=GROUP%20BY%20time%28$__interval%29%20fill%28null%29&viewPanel=panel-121",
+      "distance": "145.86",
+      "duration": "1.04 weeks",
       "versions": {
         "VT_BOX Version": "1.2.2",
-        "VCU Firmware Version": "2.2.0",
-        "Mew Hardware": "2.2.0",
-        "Mew Bootloader": "0.1.2"
+        "VCU Firmware Version": "2.3.2"
       }
     },
     "MD9GBUE28FC341014": {
       "vin": "MD9GBUE28FC341014",
       "nickname": "P39 Vehicle",
-      "location": "Batesville, Zavala County, Texas, United States",
+      "location": "774, County Road 1005B, Batesville, Zavala County, Texas, 78829, United States",
       "mode": "Non-Autonomous",
       "status": "healthy",
       "issues": [],
+      "issue_details": [],
       "timestamp": "",
       "vt_box_time": "",
-      "distance": "7.20",
-      "duration": "2 days",
+      "grafana_url": "",
+      "distance": "62.58",
+      "duration": "22.7 hours",
       "versions": {
         "VT_BOX Version": "1.2.2",
-        "VCU Firmware Version": "2.2.0",
-        "Mew Hardware": "2.2.0",
-        "Mew Bootloader": "0.1.2"
+        "VCU Firmware Version": "2.2.0"
       }
     },
     "MD9GBUE2XFC341015": {
       "vin": "MD9GBUE2XFC341015",
       "nickname": "P40 Vehicle",
-      "location": "Lamb County, Texas, United States",
+      "location": "County Road 182, Lamb County, Texas, United States",
       "mode": "Non-Autonomous",
-      "status": "unhealthy",
-      "issues": [
-        "so many default values",
-        "high_voltage_isolation_faults",
-        "DCDC_faults",
-        "Epas faults also"
-      ],
-      "timestamp": "",
+      "status": "inactive",
+      "issues": [],
+      "issue_details": [],
+      "timestamp": "Last updated on 09.10.2026(so many faults are coming BMS, EPAS, anomaly's and DCDC Medium & Location:County Road 182, Lamb County, Texas, United States)",
       "vt_box_time": "",
-      "distance": "1353.29",
-      "duration": "2.20 weeks",
+      "grafana_url": "https://grafana.bosonmotors.com/d/e74b43a6-cf76-4e99-8d01-hgehehr/vehicle-support-team-developer?orgId=1&from=2026-09-30T18:30:00.000Z&to=2026-10-15T18:29:59.000Z&timezone=browser&var-VIN=MD9GBUE2XFC341015&var-NickName=P40%20Vehicle&var-Measurement1=bms_battery_weather&var-Measurement2=bms_battery_usage&var-FIELD1=auxilary_battery_voltage&var-Field2=battery_current&var-mc1_checksum=2513&var-mc2_checksum=AB4A&var-torque_or_speed_mode=Speed&var-bms_profile_checksum=ADE2&var-ccl_offset=0&var-ccl_scale_factor=1&var-dcl_scale_factor=1&var-timezone=IST%20UTC%2B5:30&viewPanel=panel-80",
+      "distance": "Nil",
+      "duration": "Nil",
       "versions": {
         "VT_BOX Version": "1.2.2",
-        "VCU Firmware Version": "2.2.0",
-        "Mew Hardware": "2.2.0",
-        "Mew boothloader": "Nil"
+        "VCU Firmware Version": "2.2.0"
       }
     },
     "MD9GBUE21FC341016": {
       "vin": "MD9GBUE21FC341016",
       "nickname": "P41 Vehicle",
-      "location": "Bonney Road, Monterey County, California, U.S",
+      "location": "16361, Bonney Road, Monterey County, California, 95076, United States",
       "mode": "Non-Autonomous",
-      "status": "unhealthy",
-      "issues": [
-        "Motor in thermal cutback on 22nd",
-        "EPAS Level 2 & Level 3 Faults:  03-Jul07:20:00, 09-Jul 08:40:00, 09-Jul 12:40:00, 13-Jul 13:20:00, 17-Jul 09:40:00"
-      ],
+      "status": "healthy",
+      "issues": [],
+      "issue_details": [],
       "timestamp": "",
       "vt_box_time": "",
-      "distance": "344.23",
-      "duration": "1.09 week",
+      "grafana_url": "",
+      "distance": "121.49",
+      "duration": "3.01 days",
       "versions": {
         "VT_BOX Version": "1.2.2",
-        "VCU Firmware Version": "2.2.0",
-        "VCU Hardware": "2.2.0",
-        "Mew_Bootloader": "0.1.2"
+        "VCU Firmware Version": "2.2.0"
       }
     },
     "MD9GBUE23FC341017": {
       "vin": "MD9GBUE23FC341017",
-      "nickname": "P42 Vehicle",
-      "location": "East American Avenue, Fresno County, California, U.S",
+      "nickname": "P42 Vehicle (15-12-2025)",
+      "location": "East Fantz Avenue, Fresno County, California, 93648, United States",
       "mode": "Non-Autonomous",
-      "status": "inactive",
+      "status": "healthy",
       "issues": [],
-      "timestamp": "17-12-2025",
+      "issue_details": [],
+      "timestamp": "",
       "vt_box_time": "",
-      "distance": "Nil",
-      "duration": "Nil",
+      "grafana_url": "",
+      "distance": "162.84",
+      "duration": "1.14 weeks",
       "versions": {
-        "VT_BOX Version": "1.1.8_1",
-        "VCU Firmware Version": "2.3.2",
-        "Mew Hardware": "2.2.0",
-        "Mew Bootloader": "0.1.2"
+        "VT_BOX Version": "1.2.2",
+        "VCU Firmware Version": "2.6.0",
+        "mew_bootloader_firmware_version": "2.0.0"
       }
     },
     "MD9GBUE27FC341019": {
       "vin": "MD9GBUE27FC341019",
       "nickname": "P44 Vehicle",
-      "location": "Silver Creek, U.S Office",
+      "location": "2499, Ivy Street, Stirling Junction, Chico, Butte County, California, 95928, United States",
       "mode": "Non-Autonomous",
       "status": "healthy",
       "issues": [],
+      "issue_details": [],
       "timestamp": "",
       "vt_box_time": "",
-      "distance": "28.05",
-      "duration": "6.01 hours",
+      "grafana_url": "",
+      "distance": "12.86",
+      "duration": "35.9 mins",
       "versions": {
         "VT_BOX Version": "1.2.2",
-        "VCU Firmware Version": "2.3.2",
-        "Mew Hardware": "2.2.0",
-        "Mew Bootloader": "0.1.2"
+        "VCU Firmware Version": "2.3.2"
       }
     },
     "MD9GBUE23FC341020": {
       "vin": "MD9GBUE23FC341020",
       "nickname": "P45 Vehicle",
-      "location": "Silver Creek, U.S Office",
+      "location": "323, East Kern Avenue, Tulare, Tulare County, California, 93274, United States",
       "mode": "Non-Autonomous",
-      "status": "unhealthy",
-      "issues": [
-        "Motor in thermal cutback on 22nd"
-      ],
-      "timestamp": "",
+      "status": "inactive",
+      "issues": [],
+      "issue_details": [],
+      "timestamp": "on 09-10-2026(Location: 323, East Kern Avenue, Tulare, Tulare County, California, 93274, United States)",
       "vt_box_time": "",
-      "distance": "29.58",
-      "duration": "1.14 days",
+      "grafana_url": "https://grafana.bosonmotors.com/d/e74b43a6-cf76-4e99-8d01-hgehehr/vehicle-support-team-developer?orgId=1&from=2026-10-26T13:38:04.765Z&to=2026-10-26T18:02:16.089Z&timezone=America%2FLos_Angeles&var-VIN=MD9GBUE23FC341020&var-NickName=P45%20Vehicle&var-Measurement1=bms_battery_weather&var-Measurement2=bms_battery_usage&var-FIELD1=auxilary_battery_voltage&var-Field2=battery_current&var-mc1_checksum=2513&var-mc2_checksum=AB4A&var-torque_or_speed_mode=Speed&var-bms_profile_checksum=ADE2&var-ccl_offset=0&var-ccl_scale_factor=1&var-dcl_scale_factor=1&var-timezone=PDT%20UTC-7&viewPanel=panel-52",
+      "distance": "Nil",
+      "duration": "Nil",
       "versions": {
         "VT_BOX Version": "1.2.2",
-        "VCU Firmware Version": "2.2.0",
-        "Mew Hardware": "2.2.0",
-        "Mew Bootloader": "0.1.2"
+        "VCU Firmware Version": "2.3.2"
       }
     },
     "MD9GBUE25FC341021": {
       "vin": "MD9GBUE25FC341021",
       "nickname": "P46 Vehicle",
-      "location": "Five Corners, San Joaquin County, California, U.S",
+      "location": "Five Corners, San Joaquin County, California, United States",
       "mode": "Non-Autonomous",
       "status": "healthy",
       "issues": [],
+      "issue_details": [],
       "timestamp": "",
       "vt_box_time": "",
-      "distance": "163.03",
-      "duration": "4.38 days",
+      "grafana_url": "",
+      "distance": "32.69",
+      "duration": "1.41 hours",
       "versions": {
         "VT_BOX Version": "1.2.2",
-        "VCU Firmware Version": "2.3.2",
-        "Mew Hardware": "2.2.0",
-        "Mew Bootloader": "0.1.2"
+        "VCU Firmware Version": "2.3.2"
       }
     },
     "MD9GBUE27FC341022": {
@@ -2356,249 +3182,348 @@
       "nickname": "P47 Vehicle",
       "location": "Not Available",
       "mode": "Non-Autonomous",
-      "status": "mdm_issue",
-      "issues": [],
-      "timestamp": "",
-      "vt_box_time": "MDM online on this 17.02.2026 but no data",
-      "distance": "Nil",
-      "duration": "15 mins",
-      "versions": {
-        "VT_BOX Version": "",
-        "VCU Firmware Version": ""
-      }
-    },
-    "MD9GBUE29FC341023": {
-      "vin": "MD9GBUE29FC341023",
-      "nickname": "P48 Vehicle",
-      "location": "San Francisco Bay Area in California, USA",
-      "mode": "Non-Autonomous",
       "status": "inactive",
       "issues": [],
-      "timestamp": "19-12-2025",
+      "issue_details": [],
+      "timestamp": "01-09-2026",
       "vt_box_time": "",
+      "grafana_url": "",
       "distance": "Nil",
       "duration": "Nil",
       "versions": {
-        "VT_BOX Version": "1.1.8_1",
-        "VCU Firmware Version": "2.2.0",
-        "Mew Hardware": "2.2.0",
-        "Mew Bootloader": "0.1.2"
-      }
-    },
-    "MD9GBUE2XFC341029": {
-      "vin": "MD9GBUE2XFC341029",
-      "nickname": "P54 Vehicle",
-      "location": "Silver Creek, U.S",
-      "mode": "Non-Autonomous",
-      "status": "healthy",
-      "issues": [],
-      "timestamp": "",
-      "vt_box_time": "",
-      "distance": "841.15",
-      "duration": "2.28 weeks",
-      "versions": {
-        "VT_BOX Version": "1.2.2",
-        "VCU Firmware Version": "2.3.1",
-        "Operation_mode": "Torque",
-        "Mew Hardware": "2.20",
-        "Mew Bootloader": "0.1.2"
-      }
-    },
-    "MD9GBUE26FC341030": {
-      "vin": "MD9GBUE26FC341030",
-      "nickname": "P55 Vehicle",
-      "location": "Siilver Creek, U.S OFFICE",
-      "mode": "Non-Autonomous",
-      "status": "unhealthy",
-      "issues": [
-        "DSP Control Fault",
-        "BMS_chrg_limit_enforcement_fault",
-        "DSP Encoder Fault on 16th",
-        "SinCos Tracking Warning on 20th, 23rd, 24th & 30th"
-      ],
-      "timestamp": "",
-      "vt_box_time": "",
-      "distance": "229.54",
-      "duration": "1.66 weeks",
-      "versions": {
-        "VT_BOX Version": "1.2.2",
-        "VCU Firmware Version": "2.3.1",
-        "Mew Hardware": "2.20",
-        "Mew Bootloader": "2.0.0"
-      }
-    },
-    "MD9GBUE28FC341031": {
-      "vin": "MD9GBUE28FC341031",
-      "nickname": "P56 Vehicle",
-      "location": "Silver Creek, U.S OFFICE",
-      "mode": "Non-Autonomous",
-      "status": "unhealthy",
-      "issues": [
-        "Auxilary_battery_voltage on 9th & 10th",
-        "RPDO Timeout (drive inhibit) on 21th"
-      ],
-      "timestamp": "",
-      "vt_box_time": "",
-      "distance": "84.60",
-      "duration": "1.19 weeks",
-      "versions": {
-        "VT_BOX Version": "1.2.2",
-        "VCU Firmware Version": "2.3.1",
-        "Mew Hardware": "2.2.0",
-        "Mew Bootloader": "0.1.2",
-        "Operation mode": "Torque"
-      }
-    },
-    "MD9GBUE2XFC341032": {
-      "vin": "MD9GBUE2XFC341032",
-      "nickname": "P57 Vehicle",
-      "location": "Silver Creek, U.S OFFICE",
-      "mode": "Non-Autonomous",
-      "status": "healthy",
-      "issues": [],
-      "timestamp": "",
-      "vt_box_time": "",
-      "distance": "44.21",
-      "duration": "1.78 weeks",
-      "versions": {
-        "VT_BOX Version": "1.2.2",
-        "VCU Firmware Version": "2.3.1",
-        "Mew Hardware": "2.2.0",
-        "Mew Bootloader": "2.0.0",
-        "Operation mode": "Torque"
-      }
-    },
-    "MD9GBUE21FC341033": {
-      "vin": "MD9GBUE21FC341033",
-      "nickname": "P58 Vehicle",
-      "location": "Silver Creek, U.S Office",
-      "mode": "Non-Autonomous",
-      "status": "unhealthy",
-      "issues": [
-        "Epas level 3 continuous",
-        "Motor in thermal cutback on 20th"
-      ],
-      "timestamp": "",
-      "vt_box_time": "",
-      "distance": "81.68",
-      "duration": "1.96 weeks",
-      "versions": {
-        "VT_BOX Version": "1.2.2",
-        "VCU Firmware": "2.3.1",
-        "Mew Hardware": "2.2.0",
-        "Mew Bootloader": "0.1.2",
-        "Operation mode": "Torque"
-      }
-    },
-    "MD9GBUE23FC341034": {
-      "vin": "MD9GBUE23FC341034",
-      "nickname": "P59 Vehicle",
-      "location": "Silver Creek, U.S OFFICE",
-      "mode": "Non-Autonomous",
-      "status": "unhealthy",
-      "issues": [
-        "EPAS Level 3 Fault occurred continuously."
-      ],
-      "timestamp": "",
-      "vt_box_time": "",
-      "distance": "138.68",
-      "duration": "2.15 weeks",
-      "versions": {
-        "VT_BOX Version": "1.2.2",
-        "VCU Firmware Version": "2.3.1",
-        "Mew Hardware": "2.2.0",
-        "mew Bootloader": "0.1.2",
-        "Operation mode": "Torque"
-      }
-    },
-    "MD9GBUE26DC341039": {
-      "vin": "MD9GBUE26DC341039",
-      "nickname": "T10 Vehicle",
-      "location": "Hargill, Hidalgo County, Texas, U.S",
-      "mode": "Non-Autonomous",
-      "status": "unhealthy",
-      "issues": [
-        "auxilary_battery_voltage",
-        "high_voltage_isolation_fault",
-        "Epas Level 2 on 03rd, 10th, 18th & 25th"
-      ],
-      "timestamp": "",
-      "vt_box_time": "",
-      "distance": "271.38",
-      "duration": "1.35 weeks",
-      "versions": {
-        "VT_BOX Version": "1.2.2",
-        "VCU Firmware Version": "2.2.0",
-        "Mew Hardware": "2.1.0"
-      }
-    },
-    "MD9GBUE26DC341042": {
-      "vin": "MD9GBUE26DC341042",
-      "nickname": "T11 Vehicle",
-      "location": "Travis County, Texas, United States",
-      "mode": "Non-Autonomous",
-      "status": "unhealthy",
-      "issues": [
-        "Epas level 2 on 18th"
-      ],
-      "timestamp": "",
-      "vt_box_time": "",
-      "distance": "240.47",
-      "duration": "1.12 weeks",
-      "versions": {
-        "VT_BOX Version": "Nil",
-        "VCU Firmware Version": "Nil"
+        "VT_BOX Version": "",
+        "VCU Firmware Version": ""
       }
     },
     "MD9GBUE20FC341024": {
       "vin": "MD9GBUE20FC341024",
       "nickname": "P49 Vehicle",
-      "location": "Batesville, Zavala County, Texas, United States",
+      "location": "774, County Road 1005B, Batesville, Zavala County, Texas, 78829, United States",
+      "mode": "Non-Autonomous",
+      "status": "healthy",
+      "issues": [],
+      "issue_details": [],
+      "timestamp": "",
+      "vt_box_time": "",
+      "grafana_url": "",
+      "distance": "240.51",
+      "duration": "1.09 weeks",
+      "versions": {
+        "VT_BOX Version": "1.2.2",
+        "VCU Firmware Version": "2.2.0"
+      }
+    },
+    "MD9GBUE2XFC341029": {
+      "vin": "MD9GBUE2XFC341029",
+      "nickname": "P54 Vehicle",
+      "location": "2934, Falcon Drive, Madera, Madera County, California, 93637, United States",
+      "mode": "Non-Autonomous",
+      "status": "healthy",
+      "issues": [],
+      "issue_details": [],
+      "timestamp": "",
+      "vt_box_time": "",
+      "grafana_url": "",
+      "distance": "11.70",
+      "duration": "18.4 hours",
+      "versions": {
+        "VT_BOX Version": "1.2.2",
+        "VCU Firmware Version": "2.6.0"
+      }
+    },
+    "MD9GBUE26FC341030": {
+      "vin": "MD9GBUE26FC341030",
+      "nickname": "P55 Vehicle",
+      "location": "2934, Falcon Drive, Madera, Madera County, California, 93637, United States",
       "mode": "Non-Autonomous",
       "status": "unhealthy",
       "issues": [
-        "EPAS Level 2 & Level 3 Fault:  04-Jul-2026 13:40:00",
-        "EPAS Level 2 Fault Only:  04-Jul 14:00:00, 23-Jul 16:40:00, 24-Jul 11:40:00",
-        "EPAS Level 3 Fault Only:  06-Jul 09:00:00"
+        "3-pin connector"
+      ],
+      "issue_details": [
+        {
+          "id": "mmvax8jqczxxd",
+          "issue": "3-pin connector",
+          "description": "After the gearbox was replaced, a broken locking tab was identified on the 3-pin connector attached to the ESS. The damaged connector may be causing intermittent motor power loss while the vehicle is running. A replacement connector is available from another vehicle, but guidance is required on safely removing and reconnecting the three orange cables inside the ESS.",
+          "period": "Sept 3rd",
+          "occurrences": "1st time",
+          "component": "Motor",
+          "reported_by": "BVMC",
+          "severity": "High",
+          "rca": "The 3-pin connector attached to the ESS had a broken locking tab, potentially causing an intermittent connection and motor power loss while the vehicle was running. The ESS team has been consulted for guidance on replacing the damaged connector and verifying the internal connections.",
+          "responsible_team": "Mechanical Team",
+          "customer_feedback": "",
+          "grafana_url": "https://grafana.bosonmotors.com/d/e74b43a6-cf76-4e99-8d01-bmsHMIV2/bvmc-team-vtbox-data-dashboard-developer?orgId=1&var-VIN=MD9GBUE26FC341030&from=2026-09-03T16:53:32.000Z&to=2026-09-03T16:57:32.000Z&timezone=America%2FLos_Angeles&var-Measurement1=controller_motor_status_1_REAR&var-Measurement2=bms_battery_usage&var-FIELD1=motorcontroller_1_distance_travelled&var-Field2=battery_current&var-torque_or_speed_mode=Speed&var-mc1_checksum=6E4A&var-mc2_checksum=D85E&var-bms_profile_checksum=ADE2&var-cc"
+        }
       ],
       "timestamp": "",
       "vt_box_time": "",
-      "distance": "224.08",
-      "duration": "1.18 weeks",
+      "grafana_url": "",
+      "distance": "0.89",
+      "duration": "1.52 hours",
       "versions": {
         "VT_BOX Version": "1.2.2",
-        "VCU Firmware Version": "2.2.0",
-        "Mew hardware": "2.2.0",
-        "Mew Bootloader": "0.1.2"
+        "VCU Firmware Version": "2.6.0"
       }
     },
-    "MD9GBUE22DC341006": {
-      "vin": "MD9GBUE22DC341006",
-      "nickname": "US HC Yuba",
-      "location": "McCauley Estate Vineyards, Sunset Road, Brentwood, Contra Costa County, California, United States",
-      "mode": "Autonomous",
+    "MD9GBUE28FC341031": {
+      "vin": "MD9GBUE28FC341031",
+      "nickname": "P56 Vehicle",
+      "location": "2934, Falcon Drive, Madera, Madera County, California, 93637, United States",
+      "mode": "Non-Autonomous",
+      "status": "healthy",
+      "issues": [],
+      "issue_details": [],
+      "timestamp": "",
+      "vt_box_time": "",
+      "grafana_url": "",
+      "distance": "0.22",
+      "duration": "3.96 mins",
+      "versions": {
+        "VT_BOX Version": "1.2.2",
+        "VCU Firmware Version": "2.6.0"
+      }
+    },
+    "MD9GBUE2XFC341032": {
+      "vin": "MD9GBUE2XFC341032",
+      "nickname": "P57 Vehicle",
+      "location": "8798, Amen Corner, The Estates at Tour 18, Flower Mound, Denton County, Texas, 75022, United States",
+      "mode": "Non-Autonomous",
+      "status": "healthy",
+      "issues": [],
+      "issue_details": [],
+      "timestamp": "",
+      "vt_box_time": "",
+      "grafana_url": "",
+      "distance": "144.67",
+      "duration": "6.85 days",
+      "versions": {
+        "VT_BOX Version": "1.2.2",
+        "VCU Firmware Version": "2.6.0"
+      }
+    },
+    "MD9GBUE21FC341033": {
+      "vin": "MD9GBUE21FC341033",
+      "nickname": "P58 Vehicle",
+      "location": "Rivercrest Golf Club & Preserve, Oriole Lane, Upper Providence Township, Montgomery County, Pennsylvania, 19482, United States",
+      "mode": "Non-Autonomous",
+      "status": "healthy",
+      "issues": [],
+      "issue_details": [],
+      "timestamp": "",
+      "vt_box_time": "",
+      "grafana_url": "",
+      "distance": "27.32",
+      "duration": "1.27 days",
+      "versions": {
+        "VT_BOX Version": "1.2.2",
+        "VCU Firmware Version": "2.6.0"
+      }
+    },
+    "MD9GBUE23FC341034": {
+      "vin": "MD9GBUE23FC341034",
+      "nickname": "P59 Vehicle",
+      "location": "22579, Snow Road, Kern County, California, 93314, United States",
+      "mode": "Non-Autonomous",
+      "status": "healthy",
+      "issues": [],
+      "issue_details": [],
+      "timestamp": "",
+      "vt_box_time": "",
+      "grafana_url": "",
+      "distance": "184.64",
+      "duration": "6.32 days",
+      "versions": {
+        "VT_BOX Version": "1.2.2",
+        "VCU Firmware Version": "2.6.0"
+      }
+    },
+    "MD9GBUE29FC341037": {
+      "vin": "MD9GBUE29FC341037",
+      "nickname": "P62 Vehicle",
+      "location": "2934, Falcon Drive, Madera, Madera County, California, 93637, United States",
+      "mode": "Non-Autonomous",
+      "status": "healthy",
+      "issues": [],
+      "issue_details": [],
+      "timestamp": "",
+      "vt_box_time": "",
+      "grafana_url": "",
+      "distance": "107.67",
+      "duration": "5.16 hours",
+      "versions": {
+        "VT_BOX Version": "1.2.2",
+        "VCU Firmware Version": "2.6.0"
+      }
+    },
+    "MD9GBUE29FC341040": {
+      "vin": "MD9GBUE29FC341040",
+      "nickname": "P65 Vehicle",
+      "location": "2934, Falcon Drive, Madera, Madera County, California, 93637, United States",
+      "mode": "Non-Autonomous",
+      "status": "healthy",
+      "issues": [],
+      "issue_details": [],
+      "timestamp": "",
+      "vt_box_time": "",
+      "grafana_url": "",
+      "distance": "27.14",
+      "duration": "3.02 days",
+      "versions": {
+        "VT_BOX Version": "1.2.2",
+        "VCU Firmware Version": "2.6.0"
+      }
+    },
+    "MD9GBUE27FC341036": {
+      "vin": "MD9GBUE27FC341036",
+      "nickname": "P61 Vehicle",
+      "location": "2934, Falcon Drive, Madera, Madera County, California, 93637, United States",
+      "mode": "Non-Autonomous",
+      "status": "healthy",
+      "issues": [],
+      "issue_details": [],
+      "timestamp": "",
+      "vt_box_time": "",
+      "grafana_url": "",
+      "distance": "84.59",
+      "duration": "5.47 days",
+      "versions": {
+        "VT_BOX Version": "1.2.2",
+        "VCU Firmware Version": "2.6.0",
+        "mew_bootloader_firmware_version": "2.0.0"
+      }
+    },
+    "MD9GBUE26DC341039": {
+      "vin": "MD9GBUE26DC341039",
+      "nickname": "T10 Vehicle",
+      "location": "FM 493, Hargill, Hidalgo County, Texas, 78549, United States",
+      "mode": "Non-Autonomous",
       "status": "unhealthy",
       "issues": [
-        "Only BMS Data coming"
+        "High_voltage_isolation_fault",
+        "auxilary_battery_voltage"
+      ],
+      "issue_details": [
+        {
+          "id": "mmvcb24ur00kk",
+          "issue": "High_voltage_isolation_fault",
+          "description": "The BMS detects low electrical isolation between the high-voltage battery system and the vehicle chassis, potentially due to moisture, damaged cables, or an internal component fault.",
+          "period": "2 months",
+          "occurrences": "Contionus",
+          "component": "BMS",
+          "reported_by": "BVMC",
+          "severity": "Low",
+          "rca": "Inspect the battery enclosure, contactor box, and motor controller areas for water, coolant leaks, or condensation.",
+          "responsible_team": "PTE",
+          "customer_feedback": "US Citrus/Mani Skaria - Have not heard back.(Bryce Telfer)",
+          "grafana_url": "https://grafana.bosonmotors.com/d/e74b43a6-cf76-4e99-8d01-bmsHMIV2/bvmc-team-vtbox-data-dashboard-developer?orgId=1&var-VIN=MD9GBUE26DC341039&from=2026-10-16T07:00:00.000Z&to=2026-11-01T06:59:59.000Z&timezone=America%2FLos_Angeles&var-Measurement1=bms_battery_usage&var-Measurement2=controller_motor_status_1_REAR&var-FIELD1=battery_current&var-Field2=motorcontroller_1_distance_travelled&var-torque_or_speed_mode=Speed&var-mc1_checksum=2513&var-mc2_checksum=AB4A&var-bms_profile_checksum=ADE2&var-cc"
+        },
+        {
+          "id": "mmvcbbpkq2v5e",
+          "issue": "auxilary_battery_voltage",
+          "description": "The DC-DC converter stopped reporting data after 15 October 2026. On 19 October, the auxiliary battery voltage dropped to approximately 5 V. DC-DC data resumed after the vehicle was driven recently.",
+          "period": "2 months",
+          "occurrences": "Continous",
+          "component": "BMS",
+          "reported_by": "BVMC",
+          "severity": "High",
+          "rca": "The issue is suspected to be related to LV battery ageing. However, the exact root cause is yet to be confirmed.",
+          "responsible_team": "PTE",
+          "customer_feedback": "The U.S. team contacted the customer (US Citrus / Mani Skaria). No abnormalities were reported, and the vehicle is functioning normally. Further monitoring is required.",
+          "grafana_url": "https://grafana.bosonmotors.com/d/e74b43a6-cf76-4e99-8d01-hgehehr/vehicle-support-team-developer?orgId=1&from=2026-10-19T09:28:24.182Z&to=2026-10-21T13:03:39.985Z&timezone=America%2FLos_Angeles&var-VIN=MD9GBUE26DC341039&var-NickName=T10%20Vehicle&var-Measurement1=bms_battery_weather&var-Measurement2=bms_battery_usage&var-FIELD1=auxilary_battery_voltage&var-Field2=battery_current&var-mc1_checksum=2513&var-mc2_checksum=AB4A&var-torque_or_speed_mode=Speed&var-bms_profile_checksum=ADE2&var-ccl_offse"
+        }
       ],
       "timestamp": "",
       "vt_box_time": "",
-      "distance": "NIL",
-      "duration": "1.02 days",
+      "grafana_url": "https://grafana.bosonmotors.com/d/e74b43a6-cf76-4e99-8d01-hgehehr/vehicle-support-team-developer?orgId=1&from=2026-10-19T09:28:24.182Z&to=2026-10-21T13:03:39.985Z&timezone=America%2FLos_Angeles&var-VIN=MD9GBUE26DC341039&var-NickName=T10%20Vehicle&var-Measurement1=bms_battery_weather&var-Measurement2=bms_battery_usage&var-FIELD1=auxilary_battery_voltage&var-Field2=battery_current&var-mc1_checksum=2513&var-mc2_checksum=AB4A&var-torque_or_speed_mode=Speed&var-bms_profile_checksum=ADE2&var-ccl_offset=0&var-ccl_scale_factor=1&var-dcl_scale_factor=1&var-timezone=PDT%20UTC-7&viewPanel=panel-37",
+      "distance": "50.73",
+      "duration": "1.56 days",
       "versions": {
-        "VT_BOX Version": "Nil",
-        "VCU Firmware Version": "Nil"
+        "VT_BOX Version": "1.2.2",
+        "VCU Firmware Version": "2.2.0"
+      }
+    },
+    "MD9GBUE26DC341042": {
+      "vin": "MD9GBUE26DC341042",
+      "nickname": "T11 Vehicle",
+      "location": "Travis County, Texas, 78617, United States",
+      "mode": "Non-Autonomous",
+      "status": "unhealthy",
+      "issues": [
+        "chrgr_highest_voltage"
+      ],
+      "issue_details": [
+        {
+          "id": "mmvcby5xlz2u7",
+          "issue": "chrgr_highest_voltage",
+          "description": "chrgr_highest_voltage are receving the values like 950",
+          "period": "4 months",
+          "occurrences": "Continous",
+          "component": "BMS",
+          "reported_by": "BVMC",
+          "severity": "Low",
+          "rca": "This is due to the BMS_PROFILE_CHECKSUM retaining the old version. It should be updated when the vehicle arrives at the Boson service center.",
+          "responsible_team": "PTE",
+          "customer_feedback": "",
+          "grafana_url": "https://grafana.bosonmotors.com/d/e74b43a6-cf76-4e99-8d01-hgehehr/vehicle-support-team-developer?orgId=1&from=2026-10-11T07:00:00.000Z&to=2026-10-12T06:59:59.000Z&timezone=America%2FLos_Angeles&var-VIN=MD9GBUE26DC341042&var-NickName=T11%20Vehicle&var-Measurement1=controller_motor_status_1_REAR&var-Measurement2=bms_battery_weather&var-FIELD1=motorcontroller_1_distance_travelled&var-mc1_checksum=&var-mc2_checksum=&var-torque_or_speed_mode=Speed&var-bms_profile_checksum=&var-ccl_offset=0&var-ccl_sc"
+        }
+      ],
+      "timestamp": "",
+      "vt_box_time": "",
+      "grafana_url": "https://grafana.bosonmotors.com/d/e74b43a6-cf76-4e99-8d01-hgehehr/vehicle-support-team-developer?orgId=1&from=2026-10-11T07:00:00.000Z&to=2026-10-12T06:59:59.000Z&timezone=America%2FLos_Angeles&var-VIN=MD9GBUE26DC341042&var-NickName=T11%20Vehicle&var-Measurement1=controller_motor_status_1_REAR&var-Measurement2=bms_battery_weather&var-FIELD1=motorcontroller_1_distance_travelled&var-mc1_checksum=&var-mc2_checksum=&var-torque_or_speed_mode=Speed&var-bms_profile_checksum=&var-ccl_offset=0&var-ccl_scale_factor=1&var-dcl_scale_factor=1&var-timezone=PDT%20UTC-7&var-Field2=battery_soc&viewPanel=panel-38",
+      "distance": "150.25",
+      "duration": "4.71 days",
+      "versions": {
+        "VT_BOX Version": "nil",
+        "VCU Firmware Version": "nil"
       }
     },
     "MD9GBUE27DC341003": {
       "vin": "MD9GBUE27DC341003",
       "nickname": "US HC Fargo",
+      "location": "McCauley Estate Vineyards, 2525, Sunset Road, Brentwood, Contra Costa County, California, 94513, United States",
+      "mode": "Autonomous",
+      "status": "unhealthy",
+      "issues": [
+        "Only BMS data is coming"
+      ],
+      "issue_details": [
+        {
+          "id": "mmvccg3jvlrr9",
+          "issue": "Only BMS data is coming",
+          "description": "The vehicle is running an older software version, so version details are unavailable. We can monitor only BMS data, limiting our ability to diagnose EPAS, motor, and DC-DC issues.",
+          "period": "4 months",
+          "occurrences": "Continous",
+          "component": "Other",
+          "reported_by": "BVMC",
+          "severity": "Medium",
+          "rca": "The update can be completed when the customer brings the vehicle to the service center.",
+          "responsible_team": "Vehicle Support and Service Engineer",
+          "customer_feedback": "",
+          "grafana_url": ""
+        }
+      ],
+      "timestamp": "",
+      "vt_box_time": "",
+      "grafana_url": "",
+      "distance": "nil",
+      "duration": "10.1 hours",
+      "versions": {
+        "VT_BOX Version": "nil",
+        "VCU Firmware Version": "nil"
+      }
+    },
+    "MD9GBUE27DC341048": {
+      "vin": "MD9GBUE27DC341048",
+      "nickname": "P1 Vehicle",
       "location": "Not Available",
       "mode": "Autonomous",
       "status": "inactive",
       "issues": [],
-      "timestamp": "12-09-2024",
+      "issue_details": [],
+      "timestamp": "10-03-2026",
       "vt_box_time": "",
+      "grafana_url": "",
       "distance": "Nil",
       "duration": "Nil",
       "versions": {
@@ -2606,92 +3531,169 @@
         "VCU Firmware Version": ""
       }
     },
-    "MD9GBUE27DC341048": {
-      "vin": "MD9GBUE27DC341048",
-      "nickname": "P1 Vehicle",
-      "location": "Nil",
-      "mode": "Autonomous",
-      "status": "inactive",
-      "issues": [],
-      "timestamp": "10-03-2026",
-      "vt_box_time": "",
-      "distance": "Nil",
-      "duration": "Nil",
-      "versions": {
-        "VT_BOX Version": "HMI",
-        "VCU Firmware Version": "1.0.0",
-        "Mew Hardware": "2.2.0",
-        "Mew Bootloader": "0.1.2"
-      }
-    },
     "MD9GBUE24DC341069": {
       "vin": "MD9GBUE24DC341069",
       "nickname": "P12 Vehicle",
-      "location": "Ignatius Drive, Richwoods, Frisco, Collin County, Texas, United States",
+      "location": "South Willow Street, Ravenna, Fannin County, Texas, 75476, United States",
+      "mode": "Autonomous",
+      "status": "healthy",
+      "issues": [],
+      "issue_details": [],
+      "timestamp": "",
+      "vt_box_time": "",
+      "grafana_url": "",
+      "distance": "77.45",
+      "duration": "2.14 weeks",
+      "versions": {
+        "VT_BOX Version": "1.2.2",
+        "VCU Firmware Version": "2.3.0"
+      }
+    },
+    "MD9GBUE20DC341036": {
+      "vin": "MD9GBUE20DC341036",
+      "nickname": "T7 Vehicle",
+      "location": "Travis County, Texas, 78617, United States",
       "mode": "Autonomous",
       "status": "unhealthy",
       "issues": [
-        "EPAS Level 2 Fault occurred on 1st July (7 occurrences)",
-        "BMS_input_power_supply_fault on 1st July"
+        "auxilary_battery_voltage"
+      ],
+      "issue_details": [
+        {
+          "id": "mmw1z3rpy7xel",
+          "issue": "auxilary_battery_voltage",
+          "description": "The DC-DC converter stopped reporting data after 26th October 2026. On 26 October, the auxiliary battery voltage dropped to approximately 5 V.",
+          "period": "26 Oct",
+          "occurrences": "1 time",
+          "component": "BMS",
+          "reported_by": "BVMC",
+          "severity": "Medium",
+          "rca": "The issue is suspected to be related to LV battery ageing. However, the exact root cause is yet to be confirmed.",
+          "responsible_team": "PTE",
+          "customer_feedback": "",
+          "grafana_url": "https://grafana.bosonmotors.com/d/e74b43a6-cf76-4e99-8d01-hgehehr/vehicle-support-team-developer?orgId=1&from=2026-10-26T13:38:04.765Z&to=2026-10-26T18:02:16.089Z&timezone=America%2FLos_Angeles&var-VIN=MD9GBUE20DC341036y&var-NickName=&var-Measurement1=bms_battery_weather&var-Measurement2=bms_battery_usage&var-FIELD1=auxilary_battery_voltage&var-Field2=battery_current&var-mc1_checksum=2513&var-mc2_checksum=AB4A&var-torque_or_speed_mode=Speed&var-bms_profile_checksum=ADE2&var-ccl_offset=0&var-ccl_"
+        }
       ],
       "timestamp": "",
       "vt_box_time": "",
-      "distance": "9.57",
-      "duration": "2.94 days",
+      "grafana_url": "https://grafana.bosonmotors.com/d/e74b43a6-cf76-4e99-8d01-hgehehr/vehicle-support-team-developer?orgId=1&from=2026-10-26T13:38:04.765Z&to=2026-10-26T18:02:16.089Z&timezone=America%2FLos_Angeles&var-VIN=MD9GBUE20DC341036y&var-NickName=&var-Measurement1=bms_battery_weather&var-Measurement2=bms_battery_usage&var-FIELD1=auxilary_battery_voltage&var-Field2=battery_current&var-mc1_checksum=2513&var-mc2_checksum=AB4A&var-torque_or_speed_mode=Speed&var-bms_profile_checksum=ADE2&var-ccl_offset=0&var-ccl_scale_factor=1&var-dcl_scale_factor=1&var-timezone=PDT%20UTC-7",
+      "distance": "32.67",
+      "duration": "Nil",
       "versions": {
         "VT_BOX Version": "1.2.2",
-        "VCU Firmware Version": "2.3.0",
-        "Mew Hardware": "2.2.0",
-        "Mew bootloader": "Nil"
+        "VCU Firmware Version": "2.3.0"
       }
     },
     "MD9GBUE25DC341033": {
       "vin": "MD9GBUE25DC341033",
       "nickname": "T6 Vehicle",
-      "location": "Hargill, Hidalgo County, Texa, U.S",
+      "location": "South Willow Street, Ravenna, Fannin County, Texas, 75476, United States",
       "mode": "Autonomous",
-      "status": "unhealthy",
-      "issues": [
-        "RPDO Timeout (drive inhibit)",
-        "Motor in low voltage cutback",
-        "epas level 1 fault",
-        "weak_cell_fault on 5th"
-      ],
-      "timestamp": "",
+      "status": "inactive",
+      "issues": [],
+      "issue_details": [],
+      "timestamp": "02-09-2026(Location: South Willow Street, Ravenna, Fannin County, Texas, 75476, United States)",
       "vt_box_time": "",
-      "distance": "439.26",
-      "duration": "3.10 week",
+      "grafana_url": "https://grafana.bosonmotors.com/d/e74b43a6-cf76-4e99-8d01-hgehehr/vehicle-support-team-developer?orgId=1&from=2026-10-09T07:00:00.000Z&to=2026-10-10T06:59:59.000Z&timezone=America%2FLos_Angeles&var-VIN=MD9GBUE25DC341033&var-NickName=T6%20Vehicle&var-Measurement1=bms_battery_weather&var-Measurement2=bms_battery_usage&var-FIELD1=auxilary_battery_voltage&var-Field2=battery_current&var-mc1_checksum=&var-mc2_checksum=&var-torque_or_speed_mode=Speed&var-bms_profile_checksum=&var-ccl_offset=0&var-ccl_scale_factor=1&var-dcl_scale_factor=1&var-timezone=PDT%20UTC-7&viewPanel=panel-52",
+      "distance": "Nil",
+      "duration": "Nil",
       "versions": {
-        "VT_BOX Version": "HMI",
-        "VCU Firmware Version": "2.3.0",
-        "Mew Hardware": "2.2.0",
-        "Mew Bootloader": "0.1.2"
+        "VT_BOX Version(HMI)": "nil",
+        "VCU Firmware Version": "2.6.1"
       }
     },
-    "MD9GBUE28FC341028": {
-      "vin": "MD9GBUE28FC341028",
-      "nickname": "P53 Vehicle",
-      "location": "IST",
-      "mode": "Autonomous",
-      "status": "unhealthy",
+    "MD9GBUE25FC341035": {
+      "vin": "MD9GBUE25FC341035",
+      "nickname": "P60 Vehicle",
+      "location": "2934, Falcon Drive, Madera, Madera County, California, 93637, United States",
+      "mode": "Non-Autonomous",
+      "status": "mdm_issue",
       "issues": [
-        "auxilary_battery_voltage",
-        "EPAS Level 1 Fault occurred on 1st, 5th, 8th, 16th, and 28th July."
+        "Data missing"
+      ],
+      "issue_details": [
+        {
+          "id": "mmw0rdh1vzv5l",
+          "issue": "Data missing",
+          "description": "From 22-10-2026 to 26-10-2026, the MDM was online, but no data was received. We need to check whether the vehicle was at the Madera office during this period.",
+          "period": "5 days",
+          "occurrences": "no data came",
+          "component": "MDM",
+          "reported_by": "BVMC",
+          "severity": "High",
+          "rca": "need to check the application",
+          "responsible_team": "Data Scouting",
+          "customer_feedback": "it is in the office",
+          "grafana_url": "https://grafana.bosonmotors.com/d/e74b43a6-cf76-4e99-8d01-hgehehr/vehicle-support-team-developer?orgId=1&from=2026-10-21T18:30:00.000Z&to=2026-10-27T18:29:59.000Z&timezone=browser&var-VIN=MD9GBUE25FC341035&var-NickName=P60%20Vehicle&var-Measurement1=bms_battery_weather&var-Measurement2=bms_battery_usage&var-FIELD1=auxilary_battery_voltage&var-Field2=battery_current&var-mc1_checksum=6E4A&var-mc2_checksum=D85E&var-torque_or_speed_mode=Speed&var-bms_profile_checksum=ADE2&var-ccl_offset=0&var-ccl_sc"
+        }
       ],
       "timestamp": "",
-      "vt_box_time": "",
-      "distance": "14.62",
-      "duration": "5.73 days",
+      "vt_box_time": "22-10-2026 to 26-10-2026",
+      "grafana_url": "https://grafana.bosonmotors.com/d/e74b43a6-cf76-4e99-8d01-hgehehr/vehicle-support-team-developer?orgId=1&from=2026-10-21T18:30:00.000Z&to=2026-10-27T18:29:59.000Z&timezone=browser&var-VIN=MD9GBUE25FC341035&var-NickName=P60%20Vehicle&var-Measurement1=bms_battery_weather&var-Measurement2=bms_battery_usage&var-FIELD1=auxilary_battery_voltage&var-Field2=battery_current&var-mc1_checksum=6E4A&var-mc2_checksum=D85E&var-torque_or_speed_mode=Speed&var-bms_profile_checksum=ADE2&var-ccl_offset=0&var-ccl_scale_factor=1&var-dcl_scale_factor=1&var-timezone=IST%20UTC%2B5:30&viewPanel=panel-110",
+      "distance": "Nil",
+      "duration": "4 days",
       "versions": {
-        "VT_BOX Version": "2.3.0",
-        "VCU Firmware Version": "2.2.0",
-        "Mew hardware": "2.2.0",
-        "Mew Bootloader": "0.1.2"
+        "VT_BOX Version": "1.2.2",
+        "VCU Firmware Version": "2.6.0"
+      }
+    },
+    "MD9GBUE20FC341038": {
+      "vin": "MD9GBUE20FC341038",
+      "nickname": "P63 Vehicle",
+      "location": "2934, Falcon Drive, Madera, Madera County, California, 93637, United States",
+      "mode": "Non-Autonomous",
+      "status": "healthy",
+      "issues": [],
+      "issue_details": [],
+      "timestamp": "",
+      "vt_box_time": "",
+      "grafana_url": "",
+      "distance": "12.36",
+      "duration": "1.87 days",
+      "versions": {
+        "VT_BOX Version": "1.2.2",
+        "VCU Firmware Version": "2.6.0"
+      }
+    },
+    "MD9GBUE22FC341039": {
+      "vin": "MD9GBUE22FC341039",
+      "nickname": "P64 Vehicle",
+      "location": "2934, Falcon Drive, Madera, Madera County, California, 93637, United States",
+      "mode": "Non-Autonomous",
+      "status": "healthy",
+      "issues": [],
+      "issue_details": [],
+      "timestamp": "",
+      "vt_box_time": "",
+      "grafana_url": "",
+      "distance": "155.34",
+      "duration": "6.07 days",
+      "versions": {
+        "VT_BOX Version": "1.2.2",
+        "VCU Firmware Version": "2.6.0"
       }
     }
   }
 }
   </script>
+
+  <!-- PUBLISH SUCCESS MODAL -->
+  <div id="publish-success-modal" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); z-index: 9999; align-items: center; justify-content: center; backdrop-filter: blur(2px);">
+    <div style="background: #ffffff; border-radius: 12px; max-width: 480px; width: 90%; padding: 28px 24px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2); text-align: center; border: 1px solid #e2e8f0;">
+      <div style="font-size: 40px; margin-bottom: 12px;">🎉</div>
+      <h3 style="margin: 0 0 8px 0; font-size: 18px; font-weight: 700; color: #0f172a;">Mission Report Published!</h3>
+      <p style="margin: 0 0 16px 0; font-size: 13px; color: #64748b;">The report has been automatically generated and published to the Customer Dashboard.</p>
+      
+      <div id="publish-modal-meta" style="margin-bottom: 20px;"></div>
+      
+      <div style="display: flex; gap: 12px; justify-content: center;">
+        <button onclick="closePublishModal()" style="padding: 10px 18px; border: 1px solid #cbd5e1; background: #f8fafc; color: #475569; font-size: 13px; font-weight: 600; border-radius: 6px; cursor: pointer;">Close</button>
+        <a id="publish-modal-view-link" href="/" target="_blank" onclick="closePublishModal()" style="padding: 10px 18px; background: #2563eb; color: #ffffff; text-decoration: none; font-size: 13px; font-weight: 600; border-radius: 6px; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 1px 2px rgba(0,0,0,0.1);">
+          Open Customer Portal ↗
+        </a>
+      </div>
+    </div>
+  </div>
 
 </body>
 </html>

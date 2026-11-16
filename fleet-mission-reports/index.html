@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Boson Motor — Fleet Mission Reports</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<style>
+  :root {
+    --navy: #1e293b;
+    --bg: #f1f5f9;
+    --border: #e2e8f0;
+    --text: #1e293b;
+    --muted: #64748b;
+    --accent: #ea580c;
+    --accent-bg: #ffedd5;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background-color: var(--bg);
+    color: var(--text);
+    height: 100vh;
+    overflow: hidden;
+  }
+  .layout {
+    display: flex;
+    height: 100vh;
+  }
+  /* SIDEBAR */
+  .sidebar {
+    width: 290px;
+    flex-shrink: 0;
+    background-color: var(--navy);
+    color: #fff;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+  }
+  .sidebar-header {
+    padding: 24px 20px 16px 20px;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+  }
+  .sidebar-header h1 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: -0.3px;
+  }
+  .sidebar-header p {
+    margin: 6px 0 0 0;
+    font-size: 12px;
+    color: #94a3b8;
+  }
+  .sidebar-section-label {
+    padding: 16px 20px 8px 20px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #94a3b8;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .report-list {
+    list-style: none;
+    margin: 0;
+    padding: 0 12px;
+  }
+  .report-item {
+    margin-bottom: 8px;
+  }
+  .report-btn {
+    width: 100%;
+    text-align: left;
+    background: transparent;
+    border: 1px solid transparent;
+    color: #cbd5e1;
+    padding: 12px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    font-family: inherit;
+    transition: background-color 0.15s ease, border-color 0.15s ease;
+  }
+  .report-btn:hover {
+    background-color: rgba(255,255,255,0.06);
+  }
+  .report-btn .month {
+    display: block;
+    font-weight: 600;
+    color: #fff;
+    font-size: 13px;
+  }
+  .report-btn .range {
+    display: block;
+    font-size: 11px;
+    color: #94a3b8;
+    margin-top: 2px;
+  }
+  .report-btn .meta {
+    display: block;
+    font-size: 10px;
+    color: #64748b;
+    margin-top: 4px;
+  }
+  .report-btn.active {
+    background-color: var(--accent-bg);
+    border-color: var(--accent);
+  }
+  .report-btn.active .month {
+    color: var(--accent);
+  }
+  .report-btn.active .range {
+    color: #c2410c;
+  }
+  .report-btn.active .meta {
+    color: #ea580c;
+  }
+  .sidebar-footer {
+    margin-top: auto;
+    padding: 16px 20px;
+    font-size: 11px;
+    color: #64748b;
+    border-top: 1px solid rgba(255,255,255,0.1);
+  }
+  /* MAIN PANEL */
+  .main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+  .topbar {
+    background: #fff;
+    border-bottom: 1px solid var(--border);
+    padding: 14px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+  }
+  .topbar h2 {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 600;
+    color: #0f172a;
+  }
+  .topbar span#topbar-range {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 2px;
+    display: inline-block;
+  }
+  .open-external-btn {
+    display: none;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    font-size: 12px;
+    font-weight: 500;
+    color: #1e293b;
+    background: #ffffff;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+  }
+  .open-external-btn:hover {
+    background-color: #f8fafc;
+    border-color: #cbd5e1;
+  }
+  .viewer {
+    flex: 1;
+    position: relative;
+    background-color: var(--bg);
+  }
+  .viewer iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+    display: none;
+  }
+  .empty-state {
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    color: var(--muted);
+    text-align: center;
+    padding: 20px;
+  }
+  .empty-state .icon {
+    font-size: 40px;
+    margin-bottom: 12px;
+  }
+  .empty-state h3 {
+    margin: 0 0 6px 0;
+    color: #334155;
+    font-size: 16px;
+  }
+  .empty-state p {
+    margin: 0;
+    font-size: 13px;
+    max-width: 320px;
+  }
+  /* MOBILE */
+  @media (max-width: 720px) {
+    .layout {
+      flex-direction: column;
+      height: auto;
+      overflow: visible;
+    }
+    body {
+      height: auto;
+      overflow: visible;
+    }
+    .sidebar {
+      width: 100%;
+      max-height: 280px;
+    }
+    .viewer {
+      height: 70vh;
+    }
+  }
+</style>
+</head>
+<body>
+<div class="layout">
+  <!-- SIDEBAR: date selection -->
+  <nav class="sidebar">
+    <div class="sidebar-header">
+      <img src="/Boson_logo.png?v=20260826" alt="Boson Motor" style="height: 54px; width: auto; max-width: 220px; object-fit: contain; display: block; margin-bottom: 8px;">
+      <p>Fleet Mission Reports</p>
+    </div>
+    <div class="sidebar-section-label">
+      <span>Report Periods</span>
+      <span id="report-count" style="font-size: 10px; font-weight: 600; background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 10px;">2</span>
+    </div>
+    <ul class="report-list" id="report-list">
+      <!-- Populated dynamically by JS -->
+    </ul>
+    <div class="sidebar-footer">
+      <div>Select a period to open its mission report.</div>
+      <div style="margin-top: 10px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.08);">
+        <a href="/owner" style="color: #94a3b8; text-decoration: none; font-size: 11px; display: inline-flex; align-items: center; gap: 5px; transition: color 0.15s ease;">
+          <span>🔒</span> Owner Portal
+        </a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- MAIN: selected report renders here -->
+  <main class="main">
+    <div class="topbar">
+      <div>
+        <h2 id="topbar-title">No report selected</h2>
+        <span id="topbar-range"></span>
+      </div>
+      <div>
+        <a id="open-external-btn" class="open-external-btn" href="#" target="_blank">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+          Open in New Tab
+        </a>
+      </div>
+    </div>
+    <div class="viewer">
+      <div class="empty-state" id="empty-state">
+        <div class="icon">📅</div>
+        <h3>Choose a report period</h3>
+        <p>Pick a date range from the sidebar to open that month's Customer Vehicles Mission Report.</p>
+      </div>
+      <iframe id="report-frame" title="Mission report"></iframe>
+    </div>
+  </main>
+</div>
+
+<script>
+  // Initial fallback reports array
+  let REPORTS = [
+    {
+      label: "September 2026",
+      range: "01-09-2026 to 15-09-2026",
+      file: "reports/report_01-09-2026_15-09-2026.html",
+      vehicles_label: "Customer Fleet (56 Vehicles)",
+      timestamp: "15-09-2026 18:00:00 PDT"
+    },
+    {
+      label: "August 2026",
+      range: "01-08-2026 to 31-08-2026",
+      file: "reports/report_01-08-2026_31-08-2026.html",
+      vehicles_label: "Customer Fleet (57 Vehicles)",
+      timestamp: "01-09-2026 22:46:41 PDT"
+    },
+    {
+      label: "August 2026",
+      range: "01-08-2026 to 15-08-2026",
+      file: "reports/report_2026-08-01_2026-08-15.html",
+      vehicles_label: "Customer Fleet (57 Vehicles)",
+      timestamp: "15-08-2026 18:00:00 PDT"
+    }
+  ];
+
+  const listEl = document.getElementById("report-list");
+  const countEl = document.getElementById("report-count");
+  const frame = document.getElementById("report-frame");
+  const emptyState = document.getElementById("empty-state");
+  const topbarTitle = document.getElementById("topbar-title");
+  const topbarRange = document.getElementById("topbar-range");
+  const openExternalBtn = document.getElementById("open-external-btn");
+  const assetVersion = "20260826";
+
+  function withVersion(path) {
+    if (!path || path.startsWith("http")) return path;
+    const separator = path.includes("?") ? "&" : "?";
+    return path + separator + "v=" + assetVersion;
+  }
+
+  function renderList() {
+    listEl.innerHTML = "";
+    if (countEl) countEl.textContent = REPORTS.length;
+
+    if (REPORTS.length === 0) {
+      listEl.innerHTML = '<li style="padding: 16px 12px; font-size: 12px; color: #94a3b8; text-align: center;">No reports available yet.</li>';
+      return;
+    }
+
+    REPORTS.forEach((report, idx) => {
+      const li = document.createElement("li");
+      li.className = "report-item";
+      const btn = document.createElement("button");
+      btn.className = "report-btn";
+      btn.id = "report-btn-" + idx;
+      
+      const vText = report.vehicles_label ? `<span class="meta">🚗 ${report.vehicles_label}</span>` : '';
+      const tText = report.timestamp ? `<span class="meta" style="color: #64748b;">🕒 ${report.timestamp}</span>` : '';
+      const latestBadge = idx === 0 ? `<span style="float: right; font-size: 9px; font-weight: 700; background: var(--accent); color: #fff; padding: 2px 6px; border-radius: 10px; text-transform: uppercase; letter-spacing: 0.3px;">Latest</span>` : '';
+      
+      btn.innerHTML = '<div style="display: flex; justify-content: space-between; align-items: baseline;"><span class="month">' + (report.label || report.title || "Mission Report") + '</span>' + latestBadge + '</div>' +
+                      '<span class="range">' + report.range + '</span>' +
+                      vText + tText;
+      btn.addEventListener("click", () => selectReport(idx));
+      li.appendChild(btn);
+      listEl.appendChild(li);
+    });
+  }
+
+  function selectReport(idx) {
+    const report = REPORTS[idx];
+    if (!report) return;
+
+    document.querySelectorAll(".report-btn").forEach(b => b.classList.remove("active"));
+    const activeBtn = document.getElementById("report-btn-" + idx);
+    if (activeBtn) activeBtn.classList.add("active");
+
+    const label = report.label || report.title || "Mission Report";
+    topbarTitle.textContent = label + " — Customer Vehicles Mission Report";
+    
+    let rangeText = report.range || "";
+    if (rangeText && !rangeText.includes("PDT")) {
+      rangeText += " (PDT)";
+    }
+    topbarRange.textContent = rangeText;
+
+    // Ensure file path resolves correctly
+    let filePath = report.file;
+    if (!filePath.startsWith("http") && !filePath.startsWith("/")) {
+      filePath = "/" + filePath;
+    }
+    const versionedFilePath = withVersion(filePath);
+    frame.src = versionedFilePath;
+    frame.style.display = "block";
+    emptyState.style.display = "none";
+
+    if (openExternalBtn) {
+      openExternalBtn.href = versionedFilePath;
+      openExternalBtn.style.display = "inline-flex";
+    }
+  }
+
+  async function fetchReports() {
+    try {
+      const res = await fetch('/api/reports');
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) {
+          REPORTS = data;
+        }
+      }
+    } catch (e) {
+      console.warn("Could not fetch reports from API, using default/cached list:", e);
+    }
+    renderList();
+    
+    // Auto-select and display the latest report on page entry (no clicking needed)
+    if (REPORTS.length > 0) {
+      selectReport(0);
+    }
+  }
+
+  // Load dynamic report list and auto-open latest report on startup
+  fetchReports();
+</script>
+</body>
+</html>

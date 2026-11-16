@@ -1,9 +1,16 @@
 #!/usr/bin/env python3
+import http.server
+import time
+import threading
+import socketserver
+import sqlite3
 import os
 import sys
 import json
 import re
 import webbrowser
+
+import issue_report
 
 PREDEFINED_VEHICLES = {
     # Non-Autonomous
@@ -84,7 +91,6 @@ PREDEFINED_VEHICLES = {
     "MD9GBUE28DC341012": {"nickname": "Yellow Dragon", "location": "Not Available", "mode": "Autonomous"}
 }
 
-import sqlite3
 
 def get_db_connection():
     db_url = os.environ.get("DATABASE_URL")
@@ -92,20 +98,21 @@ def get_db_connection():
         import psycopg2
         if db_url.startswith("postgres://"):
             db_url = db_url.replace("postgres://", "postgresql://", 1)
-        
+
         # Auto-append sslmode=require if not present in the URL
         if "sslmode=" not in db_url:
             if "?" in db_url:
                 db_url += "&sslmode=require"
             else:
                 db_url += "?sslmode=require"
-                
+
         return psycopg2.connect(db_url)
     else:
         # Fallback to local SQLite database in the same directory as the script
         dir_path = os.path.dirname(os.path.abspath(__file__))
         db_path = os.path.join(dir_path, "fleet_state.db")
         return sqlite3.connect(db_path)
+
 
 def init_db():
     conn = get_db_connection()
@@ -120,14 +127,15 @@ def init_db():
     conn.commit()
     conn.close()
 
+
 def save_state_to_db(vehicles, global_duration):
     conn = get_db_connection()
     cursor = conn.cursor()
     vehicles_json = json.dumps(vehicles)
-    
+
     is_sqlite = not bool(os.environ.get("DATABASE_URL"))
     placeholder = "?" if is_sqlite else "%s"
-    
+
     # Check if row 1 exists
     cursor.execute("SELECT id FROM fleet_state WHERE id = 1")
     if cursor.fetchone():
@@ -136,9 +144,10 @@ def save_state_to_db(vehicles, global_duration):
     else:
         query = f"INSERT INTO fleet_state (id, global_duration, vehicles_json) VALUES (1, {placeholder}, {placeholder})"
         cursor.execute(query, (global_duration, vehicles_json))
-            
+
     conn.commit()
     conn.close()
+
 
 def save_state_to_json(vehicles, global_duration):
     try:
@@ -154,6 +163,7 @@ def save_state_to_json(vehicles, global_duration):
     except Exception as e:
         print(f"⚠️ Warning: Could not save state to fleet_state.json ({e})")
 
+
 def load_previous_vehicles():
     dir_path = os.path.dirname(os.path.abspath(__file__))
     json_path = os.path.join(dir_path, "fleet_state.json")
@@ -165,26 +175,31 @@ def load_previous_vehicles():
             with open(json_path, "r", encoding="utf-8") as f:
                 data = json.load(f)
                 if isinstance(data, dict) and "vehicles" in data and data["vehicles"]:
-                    print("✅ Successfully loaded state from fleet_state.json backup (Local Mode Primary).")
+                    print(
+                        "✅ Successfully loaded state from fleet_state.json backup (Local Mode Primary).")
                     # Sync to SQLite db
                     try:
                         init_db()
-                        save_state_to_db(data.get("vehicles", {}), data.get("global_duration", ""))
+                        save_state_to_db(data.get("vehicles", {}),
+                                         data.get("global_duration", ""))
                     except Exception as db_err:
-                        print(f"⚠️ Warning: Could not sync JSON state to SQLite database ({db_err})")
+                        print(
+                            f"⚠️ Warning: Could not sync JSON state to SQLite database ({db_err})")
                     return data
         except Exception as e:
-            print(f"⚠️ Warning: Could not load state from fleet_state.json ({e})")
+            print(
+                f"⚠️ Warning: Could not load state from fleet_state.json ({e})")
 
     # 2. Try database (PostgreSQL or SQLite)
     try:
         init_db()
         conn = get_db_connection()
         cursor = conn.cursor()
-        cursor.execute("SELECT global_duration, vehicles_json FROM fleet_state WHERE id = 1")
+        cursor.execute(
+            "SELECT global_duration, vehicles_json FROM fleet_state WHERE id = 1")
         row = cursor.fetchone()
         conn.close()
-        
+
         if row:
             global_duration, vehicles_json = row
             vehicles = json.loads(vehicles_json) if vehicles_json else {}
@@ -193,7 +208,7 @@ def load_previous_vehicles():
                 return {"global_duration": global_duration or "", "vehicles": vehicles}
     except Exception as e:
         print(f"⚠️ Warning: Could not load state from database ({e})")
-        
+
     # 3. Try JSON backup file (as fallback if not loaded in step 1 or if not running locally)
     if os.path.exists(json_path):
         try:
@@ -203,45 +218,55 @@ def load_previous_vehicles():
                     print("✅ Successfully loaded state from fleet_state.json backup.")
                     # Try to populate/sync database from JSON
                     try:
-                        save_state_to_db(data.get("vehicles", {}), data.get("global_duration", ""))
+                        save_state_to_db(data.get("vehicles", {}),
+                                         data.get("global_duration", ""))
                     except:
                         pass
                     return data
         except Exception as e:
-            print(f"⚠️ Warning: Could not load state from fleet_state.json ({e})")
+            print(
+                f"⚠️ Warning: Could not load state from fleet_state.json ({e})")
 
     # 4. Fallback to HTML state (also seeds the database/json if empty)
     html_state = {"global_duration": "", "vehicles": {}}
     dest_file = os.path.join(dir_path, "vehicle_mission_report-4.html")
     if not os.path.exists(dest_file):
         dest_file = os.path.join(dir_path, "vehicle_mission_report_email.html")
-        
+
     if os.path.exists(dest_file):
         try:
             with open(dest_file, "r", encoding="utf-8") as f:
                 content = f.read()
-            
-            match = re.search(r'<script type="application/json" id="vehicles-json-state">(.*?)</script>', content, re.DOTALL)
+
+            match = re.search(
+                r'<script type="application/json" id="vehicles-json-state">(.*?)</script>', content, re.DOTALL)
             if not match:
-                match = re.search(r'<script type="application/json" id="vehicles-json-data">(.*?)</script>', content, re.DOTALL)
+                match = re.search(
+                    r'<script type="application/json" id="vehicles-json-data">(.*?)</script>', content, re.DOTALL)
             if match:
                 parsed = json.loads(match.group(1).strip())
                 if isinstance(parsed, dict) and "vehicles" in parsed:
                     html_state = parsed
                 else:
                     html_state = {"global_duration": "", "vehicles": parsed}
-                
+
                 # Seed database/JSON from HTML state
                 try:
-                    save_state_to_db(html_state.get("vehicles", {}), html_state.get("global_duration", ""))
-                    save_state_to_json(html_state.get("vehicles", {}), html_state.get("global_duration", ""))
-                    print("✅ Successfully seeded database and JSON with HTML state data.")
+                    save_state_to_db(html_state.get(
+                        "vehicles", {}), html_state.get("global_duration", ""))
+                    save_state_to_json(html_state.get(
+                        "vehicles", {}), html_state.get("global_duration", ""))
+                    print(
+                        "✅ Successfully seeded database and JSON with HTML state data.")
                 except Exception as seed_err:
-                    print(f"⚠️ Warning: Could not seed database/JSON ({seed_err})")
+                    print(
+                        f"⚠️ Warning: Could not seed database/JSON ({seed_err})")
         except Exception as e:
-            print(f"⚠️ Warning: Could not parse previous state data from HTML ({e}). Starting fresh.")
-            
+            print(
+                f"⚠️ Warning: Could not parse previous state data from HTML ({e}). Starting fresh.")
+
     return html_state
+
 
 def save_state_to_builder(vehicles, global_duration):
     # Save to database (PostgreSQL or SQLite)
@@ -251,7 +276,7 @@ def save_state_to_builder(vehicles, global_duration):
     except Exception as db_err:
         print(f"⚠️ Warning: Could not save state to database ({db_err})")
         db_err_to_raise = db_err
-        
+
     # Save to json file as backup
     try:
         save_state_to_json(vehicles, global_duration)
@@ -265,17 +290,17 @@ def save_state_to_builder(vehicles, global_duration):
     builder_file = os.path.join(dir_path, "vehicle_mission_report-4.html")
     if not os.path.exists(builder_file):
         return
-        
+
     try:
         with open(builder_file, "r", encoding="utf-8") as f:
             content = f.read()
-            
+
         state_data = {
             "global_duration": global_duration,
             "vehicles": vehicles
         }
         json_str = json.dumps(state_data, indent=2)
-        
+
         # Replace content inside the script tags in the builder safely without regex bad escape issues
         start_tag = '<script type="application/json" id="vehicles-json-state">'
         end_tag = '</script>'
@@ -285,13 +310,13 @@ def save_state_to_builder(vehicles, global_duration):
         end_idx = content.find(end_tag, start_idx)
         if end_idx == -1:
             raise ValueError(f"Could not find end tag: {end_tag}")
-            
+
         new_content = (
             content[:start_idx + len(start_tag)] +
             "\n  " + json_str + "\n  " +
             content[end_idx:]
         )
-        
+
         with open(builder_file, "w", encoding="utf-8") as f:
             f.write(new_content)
     except Exception as e:
@@ -333,7 +358,7 @@ def prompt_vehicle_data(vin, existing_data=None):
             if data["nickname"].lower() == vin.lower():
                 matched_vin = p_vin
                 break
-        
+
         if matched_vin:
             vin = matched_vin
             defaults = {
@@ -347,7 +372,8 @@ def prompt_vehicle_data(vin, existing_data=None):
                 "distance": "",
                 "duration": ""
             }
-            print(f"\n--- Loaded Predefined Details (Matched by Nickname) for: {vin} ---")
+            print(
+                f"\n--- Loaded Predefined Details (Matched by Nickname) for: {vin} ---")
         else:
             defaults = {
                 "nickname": "Not Named",
@@ -362,40 +388,51 @@ def prompt_vehicle_data(vin, existing_data=None):
             }
             print(f"\n--- Entering details for new vehicle: {vin} ---")
 
-    print(f"Nickname: {defaults['nickname']}  |  Location: {defaults['location']}  |  Mode: {defaults['mode']}")
+    print(
+        f"Nickname: {defaults['nickname']}  |  Location: {defaults['location']}  |  Mode: {defaults['mode']}")
 
-    modify_input = input("Modify vehicle details (Nickname/Location/Mode)? (y/N): ").strip().lower()
+    modify_input = input(
+        "Modify vehicle details (Nickname/Location/Mode)? (y/N): ").strip().lower()
     nickname = defaults['nickname']
     location = defaults['location']
     mode = defaults['mode']
 
     if modify_input in ['y', 'yes']:
-        nick = input(f"   Enter Nickname (default: '{defaults['nickname']}'): ").strip()
-        if nick: nickname = nick
-        loc = input(f"   Enter Location (default: '{defaults['location']}'): ").strip()
-        if loc: location = loc
+        nick = input(
+            f"   Enter Nickname (default: '{defaults['nickname']}'): ").strip()
+        if nick:
+            nickname = nick
+        loc = input(
+            f"   Enter Location (default: '{defaults['location']}'): ").strip()
+        if loc:
+            location = loc
         curr_mode = defaults['mode']
-        mode_input = input(f"   Select Mode: [1] Autonomous, [2] Non-Autonomous (default: '{curr_mode}'): ").strip()
+        mode_input = input(
+            f"   Select Mode: [1] Autonomous, [2] Non-Autonomous (default: '{curr_mode}'): ").strip()
         if mode_input:
             while mode_input not in ['1', '2']:
                 mode_input = input("      Please enter 1 or 2: ").strip()
             mode = "Autonomous" if mode_input == '1' else "Non-Autonomous"
 
     # Status Prompts
-    print(f"Select Health / Activity Status (current: '{defaults['status']}'):")
+    print(
+        f"Select Health / Activity Status (current: '{defaults['status']}'):")
     print("   [1] Healthy")
     print("   [2] Issues Detected")
     print("   [3] Not Active")
     print("   [4] MDM Issue")
-    status_input = input("   Enter status choice (1, 2, 3, or 4, or Enter to keep current): ").strip()
+    status_input = input(
+        "   Enter status choice (1, 2, 3, or 4, or Enter to keep current): ").strip()
     if not status_input:
         status = defaults['status']
     else:
         while status_input not in ['1', '2', '3', '4']:
             status_input = input("   Please enter 1, 2, 3, or 4: ").strip()
-        status = "healthy" if status_input == '1' else ("unhealthy" if status_input == '2' else ("inactive" if status_input == '3' else "mdm_issue"))
+        status = "healthy" if status_input == '1' else ("unhealthy" if status_input == '2' else (
+            "inactive" if status_input == '3' else "mdm_issue"))
 
     issues = []
+    issue_details = []
     timestamp = ""
     vt_box_time = ""
     distance = ""
@@ -408,59 +445,71 @@ def prompt_vehicle_data(vin, existing_data=None):
             dist_prompt += f" (default: '{defaults['distance']}')"
         dist_prompt += ": "
         distance = input(dist_prompt).strip()
-        if not distance: distance = defaults['distance']
+        if not distance:
+            distance = defaults['distance']
         while not distance or distance == 'Nil':
-            distance = input("   Distance is required. Enter Distance: ").strip()
+            distance = input(
+                "   Distance is required. Enter Distance: ").strip()
 
         dur_prompt = "Enter Data Logged Duration"
         if defaults['duration'] and defaults['duration'] != 'Nil':
             dur_prompt += f" (default: '{defaults['duration']}')"
         dur_prompt += ": "
         duration = input(dur_prompt).strip()
-        if not duration: duration = defaults['duration']
+        if not duration:
+            duration = defaults['duration']
         while not duration or duration == 'Nil':
-            duration = input("   Duration is required. Enter Duration: ").strip()
+            duration = input(
+                "   Duration is required. Enter Duration: ").strip()
 
     elif status == 'unhealthy':
         # Prompt for Issues
         keep_issues = 'n'
         if existing_data and existing_data.get('status') == 'unhealthy' and existing_data.get('issues'):
             print(f"   Current issues: {existing_data['issues']}")
-            keep_input = input("   Do you want to keep the current issues? (Yes/No, default: Yes): ").strip().lower()
+            keep_input = input(
+                "   Do you want to keep the current issues? (Yes/No, default: Yes): ").strip().lower()
             if not keep_input or keep_input in ['yes', 'y']:
                 keep_issues = 'y'
                 issues = existing_data['issues']
+                issue_details = existing_data.get('issue_details', [])
         if keep_issues != 'y':
-            print("\n   --- Enter Vehicle Issues (Press Enter on an empty line to finish) ---")
+            print(
+                "\n   --- Enter Vehicle Issues (Press Enter on an empty line to finish) ---")
             idx = 1
             while True:
                 issue = input(f"      Issue #{idx}: ").strip()
                 if not issue:
                     if not issues:
-                        print("      At least one issue is required if status is Issues Detected.")
+                        print(
+                            "      At least one issue is required if status is Issues Detected.")
                         continue
                     break
                 issues.append(issue)
                 idx += 1
-        
+
         # Prompt for Distance/Duration
         dist_prompt = "Enter Distance Travelled in km"
         if defaults['distance'] and defaults['distance'] != 'Nil':
             dist_prompt += f" (default: '{defaults['distance']}')"
         dist_prompt += ": "
         distance = input(dist_prompt).strip()
-        if not distance: distance = defaults['distance']
+        if not distance:
+            distance = defaults['distance']
         while not distance or distance == 'Nil':
-            distance = input("   Distance is required. Enter Distance: ").strip()
+            distance = input(
+                "   Distance is required. Enter Distance: ").strip()
 
         dur_prompt = "Enter Data Logged Duration"
         if defaults['duration'] and defaults['duration'] != 'Nil':
             dur_prompt += f" (default: '{defaults['duration']}')"
         dur_prompt += ": "
         duration = input(dur_prompt).strip()
-        if not duration: duration = defaults['duration']
+        if not duration:
+            duration = defaults['duration']
         while not duration or duration == 'Nil':
-            duration = input("   Duration is required. Enter Duration: ").strip()
+            duration = input(
+                "   Duration is required. Enter Duration: ").strip()
 
     elif status == 'inactive':
         # Inactive means Distance/Duration are Nil
@@ -494,9 +543,11 @@ def prompt_vehicle_data(vin, existing_data=None):
             dur_prompt += f" (default: '{defaults['duration']}')"
         dur_prompt += ": "
         duration = input(dur_prompt).strip()
-        if not duration: duration = defaults['duration']
+        if not duration:
+            duration = defaults['duration']
         while not duration or duration == 'Nil':
-            duration = input("   Duration is required. Enter Duration: ").strip()
+            duration = input(
+                "   Duration is required. Enter Duration: ").strip()
 
     temp_data = {
         "vin": vin,
@@ -506,168 +557,32 @@ def prompt_vehicle_data(vin, existing_data=None):
         "status": status,
         "is_healthy": (status == 'healthy'),
         "issues": issues,
+        "issue_details": issue_details,
         "timestamp": timestamp,
         "vt_box_time": vt_box_time,
         "distance": distance,
         "duration": duration
     }
 
-    add_report_input = input("\nAdd this vehicle to the report? (Y/n): ").strip().lower()
+    add_report_input = input(
+        "\nAdd this vehicle to the report? (Y/n): ").strip().lower()
     if not add_report_input or add_report_input in ['y', 'yes']:
         return temp_data
     else:
         print("Vehicle entry discarded.")
         return None
 
+
 def get_short_nickname(nickname):
-    name = re.sub(r'\s*Vehicle.*', '', nickname)
-    name = re.sub(r'\s*\(.*?\)', '', name)
-    if name == "US HC Fargo":
-        return "USHC Fargo"
-    if name == "US HC Yuba":
-        return "USHC Yuba"
-    return name.strip()
+    return issue_report.get_short_nickname(nickname)
+
 
 def get_issue_summary_section(vehicles, global_duration):
-    # Setup static list for temperature anomalies
-    temp_anomaly_vins = [
-        "MD9GBUE27DC341048",  # P1
-        "MD9GBUE23DC341063",  # P6
-        "MD9GBUE29DC341066",  # P9
-        "MD9GBUE22DC341068",  # P11
-        "MD9GBUE27DC341079",  # P22
-        "MD9GBUE20DC341070",  # P13
-        "MD9GBUE24DC341038",  # T9
-    ]
+    """Issue Summary table (grouped by Component) plus the Issue Category
+    Summary / Data / Telemetry Issues tables.  The logic lives in
+    issue_report.py so that every Python copy behaves identically."""
+    return issue_report.get_issue_summary_section(vehicles, global_duration)
 
-    # Categorize active vehicles
-    mdm_list = []
-    inactive_list = []
-    temp_anomaly_list = []
-    bms_list = []
-    charging_list = []
-    ok_list = []
-    data_loss_list = []
-
-    for vin, val in sorted(vehicles.items()):
-        status = val.get("status", "healthy")
-        nick = get_short_nickname(val.get("nickname", ""))
-        issues = val.get("issues", [])
-        issues_str = ", ".join(issues)
-        
-        # Link to vehicle if there are issues or is inactive
-        link_color = "#dc2626"
-        if status == 'healthy':
-            link_color = "#16a34a"
-        elif status == 'inactive':
-            link_color = "#64748b"
-        elif status == 'mdm_issue':
-            link_color = "#ea580c"
-
-        vehicle_link = f'<strong><a href="#vin-{vin}" style="color: {link_color}; text-decoration: none; font-weight: 600;">{nick}</a></strong>'
-
-        # Determine base category
-        if status == 'mdm_issue':
-            desc = issues_str if issues_str else f"VT_BOX online: {val.get('vt_box_time') or 'Not Available'}"
-            mdm_list.append(f'{vehicle_link} ({vin}) — {desc}.')
-        elif status == 'inactive':
-            timestamp = val.get("timestamp") or "Not Available"
-            inactive_list.append(f'<strong><span style="color: #64748b;">{nick}</span></strong> — Last updated {timestamp}')
-        elif status == 'unhealthy':
-            if any("data loss" in issue.lower() for issue in issues):
-                data_loss_list.append(f'{vehicle_link} — {issues_str}')
-            else:
-                if any("plug state 4" in issue.lower() or "charging" in issue.lower() for issue in issues):
-                    charging_list.append(f'{vehicle_link} — {issues_str}')
-                else:
-                    bms_list.append(f'{vehicle_link} — {issues_str}')
-        elif status == 'healthy':
-            ok_list.append(f'<span style="color:#16a34a; font-weight:600;">{nick}</span>')
-
-        # Temp anomalies
-        if vin in temp_anomaly_vins:
-            temp_anomaly_list.append(nick)
-
-    # Format lists into table rows
-    def format_row(title, color, text_list, count, is_bold=True, badge_bg=None, badge_color=None):
-        if not text_list:
-            if title == "Charging Issues (Plug State 4)":
-                rendered_text = "None reported"
-            else:
-                return "" # Don't display empty rows
-        else:
-            if title == "Motor Controller Temperature Anomaly (Negative Values)":
-                rendered_text = ", ".join(text_list)
-            elif title == "✓ OK / No Issues":
-                rendered_text = ", ".join(text_list)
-            else:
-                rendered_text = "<br/>".join(text_list)
-
-        count_badge = "—"
-        if count is not None:
-            if badge_bg and badge_color:
-                count_badge = f'<span style="display: inline-block; padding: 4px 8px; font-size: 11px; font-weight: bold; border-radius: 12px; background-color: {badge_bg}; color: {badge_color};">{count}</span>'
-            else:
-                count_badge = f'<span style="display: inline-block; padding: 4px 8px; font-size: 11px; font-weight: bold; border-radius: 12px; background-color: #f1f3f5; color: #475569;">{count}</span>'
-
-        title_style = f"color: {color}; font-weight: 600; vertical-align: top;" if is_bold else "color: #475569; vertical-align: top;"
-        
-        return f"""
-            <tr style="border-bottom: 1px solid #f1f5f9;">
-              <td style="padding: 12px; border-bottom: 1px solid #f1f5f9; {title_style}">{title}</td>
-              <td style="padding: 12px; border-bottom: 1px solid #f1f5f9; color: #475569; vertical-align: top;">{rendered_text}</td>
-              <td style="padding: 12px; border-bottom: 1px solid #f1f5f9; text-align: right; vertical-align: top;">{count_badge}</td>
-            </tr>
-        """
-
-    rows = []
-    rows.append(format_row("⚠ MDM ON but No Data Received", "#ea580c", mdm_list, len(mdm_list), badge_bg="#ffedd5", badge_color="#ea580c"))
-    rows.append(format_row("⊘ No Data Reported", "#64748b", inactive_list, len(inactive_list)))
-    rows.append(format_row("Motor Controller Temperature Anomaly (Negative Values)", "#475569", temp_anomaly_list, len(temp_anomaly_list) if temp_anomaly_list else 0, is_bold=False))
-    rows.append(format_row("✗ BMS / Motor Faults", "#dc2626", bms_list, len(bms_list), badge_bg="#fee2e2", badge_color="#dc2626"))
-    rows.append(format_row("Charging Issues (Plug State 4)", "#475569", charging_list, len(charging_list), is_bold=False))
-    rows.append(format_row("✓ OK / No Issues", "#16a34a", ok_list, len(ok_list), badge_bg="#dcfce7", badge_color="#16a34a"))
-    rows.append(format_row("✗ Data Loss", "#dc2626", data_loss_list, len(data_loss_list), badge_bg="#fee2e2", badge_color="#dc2626"))
-
-    table_rows_html = "\n".join(rows)
-
-    return f"""
-    <!-- ISSUE SUMMARY SECTION -->
-    <tr id="issue-summary">
-      <td style="padding: 24px; border-top: 1px solid #e2e8f0;">
-        <table width="100%" border="0" cellpadding="0" cellspacing="0" style="border-bottom: 2px solid #f1f5f9; padding-bottom: 8px; margin-bottom: 16px;">
-          <tr>
-            <td style="vertical-align: middle;">
-              <h2 style="margin: 0; font-size: 18px; font-weight: 600; color: #0f172a;"> Issue Summary</h2>
-            </td>
-            <td style="text-align: right; font-size: 12px; color: #64748b; font-weight: 500; vertical-align: middle;">
-              <strong>Report Duration:</strong> {global_duration} (PDT)
-            </td>
-          </tr>
-        </table>
-        <p style="font-size: 13px; color: #64748b; margin-bottom: 16px;">
-          Category-level breakdown of vehicle issues compiled for the report duration.
-        </p>
-
-        <table width="100%" border="0" cellpadding="0" cellspacing="0" style="font-size: 13px; border: 1px solid #e2e8f0; border-radius: 6px; overflow: hidden;">
-          <thead>
-            <tr bgcolor="#f8fafc">
-              <th style="padding: 10px 12px; font-weight: 600; text-align: left; border-bottom: 2px solid #e2e8f0; color: #475569; width: 220px;">Issue Category</th>
-              <th style="padding: 10px 12px; font-weight: 600; text-align: left; border-bottom: 2px solid #e2e8f0; color: #475569;">Affected Vehicles</th>
-              <th style="padding: 10px 12px; font-weight: 600; text-align: right; border-bottom: 2px solid #e2e8f0; color: #475569; width: 70px;">Count</th>
-            </tr>
-          </thead>
-          <tbody>
-            {table_rows_html}
-            <tr>
-              <td style="padding: 12px; color: #0f172a; font-weight: 700;" colspan="2">Total Vehicles</td>
-              <td style="padding: 12px; text-align: right; color: #0f172a; font-weight: 700;">{len(vehicles)}</td>
-            </tr>
-          </tbody>
-        </table>
-      </td>
-    </tr>
-    """
 
 def compress_html(html):
     # Remove the state script tag since it's not needed in the email report
@@ -681,7 +596,10 @@ def compress_html(html):
     lines = [line.strip() for line in html.splitlines() if line.strip()]
     return "\n".join(lines)
 
+
 def generate_html_report(vehicles, global_duration):
+    # Normalise the new issue fields (old reports without them stay unchanged)
+    vehicles = issue_report.normalize_vehicles(vehicles)
     dir_path = os.path.dirname(os.path.abspath(__file__))
     dest_file = os.path.join(dir_path, "vehicle_mission_report_email.html")
 
@@ -710,13 +628,29 @@ def generate_html_report(vehicles, global_duration):
       margin: 0 0 10px 0;
       line-height: 1.5;
     }
-    .badge {
-      display: inline-block;
-      padding: 4px 8px;
-      font-size: 11px;
-      font-weight: bold;
-      border-radius: 12px;
-      text-transform: uppercase;
+    @media only screen and (max-width: 620px) {
+      .stack-col {
+        display: block !important;
+        width: 100% !important;
+        padding: 0 0 16px 0 !important;
+        box-sizing: border-box !important;
+      }
+    }
+    .vehicle-link {
+      color: #2563eb;
+      text-decoration: underline;
+      text-underline-offset: 3px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .vehicle-link:hover {
+      color: #1d4ed8;
+      text-decoration-thickness: 2px;
+    }
+    .vehicle-link:focus-visible {
+      outline: 2px solid #2563eb;
+      outline-offset: 3px;
+      border-radius: 3px;
     }
   </style>
 </head>
@@ -727,8 +661,8 @@ def generate_html_report(vehicles, global_duration):
     <!-- HEADER -->
     <tr>
       <td bgcolor="#1e293b" style="padding: 30px 24px; text-align: center;">
-        <h1 style="margin: 0; color: #ffffff; font-size: 24px; font-weight: 700; letter-spacing: -0.5px;">Boson Motor</h1>
-        <p style="margin: 6px 0 0 0; color: #94a3b8; font-size: 14px; font-weight: 500;">Vehicle Dashboard &mdash; Static Customer Vehicles Mission Report</p>
+        <img src="/Boson_logo.png?v=20260826" alt="Boson Motor" style="height: 76px; width: auto; max-width: 320px; object-fit: contain; display: block; margin: 0 auto 14px auto;">
+        <p style="margin: 6px 0 0 0; color: #94a3b8; font-size: 14px; font-weight: 500;">Customer Vehicles Mission Report</p>
       </td>
     </tr>
 """
@@ -751,7 +685,8 @@ def generate_html_report(vehicles, global_duration):
         html_out += get_issue_summary_section(vehicles, global_duration)
 
         # VEHICLE DETAILS SECTION
-        has_issue_cards = any(v.get("status") not in ["healthy", "inactive"] for v in vehicles.values())
+        has_issue_cards = any(v.get("status") not in [
+                              "healthy", "inactive"] for v in vehicles.values())
         if has_issue_cards:
             html_out += """
     <!-- VEHICLE DETAILS SECTION -->
@@ -774,7 +709,8 @@ def generate_html_report(vehicles, global_duration):
                     cells = []
                     for k, v in sorted(versions.items()):
                         if v.strip():
-                            cells.append(f'<span style="color: #475569; font-weight: 600;">{k}:</span> <span style="color: #0f172a; margin-right: 15px;">{v}</span>')
+                            cells.append(
+                                f'<span style="color: #475569; font-weight: 600;">{k}:</span> <span style="color: #0f172a; margin-right: 15px;">{v}</span>')
                     if cells:
                         joined_cells = " &nbsp;|&nbsp; ".join(cells)
                         versions_html = f"""
@@ -782,10 +718,10 @@ def generate_html_report(vehicles, global_duration):
                           {joined_cells}
                         </div>
                         """
-                
+
                 card_border_color = "#22c55e"
                 status_header = '<span style="color: #16a34a; font-weight: bold;">HEALTHY</span>'
-                
+
                 if status == 'unhealthy':
                     card_border_color = "#ef4444"
                     status_header = '<span style="color: #dc2626; font-weight: bold;">ISSUE DETECTED</span>'
@@ -811,6 +747,11 @@ def generate_html_report(vehicles, global_duration):
                           ⚠ MDM Issue: Monitoring flag is True, but no data came. VT_BOX came online at: <strong>{vt_box_time}</strong>
                         </div>
                     """
+                    mdm_detail_table = issue_report.build_issue_detail_table(vin, val)
+                    if mdm_detail_table:
+                        anomalies_section += f'<div style="margin-top: 8px;">{mdm_detail_table}</div>'
+                elif issue_report.build_issue_detail_table(vin, val):
+                    anomalies_section = issue_report.build_issue_detail_table(vin, val)
                 else:
                     table_rows = ""
                     for idx, issue in enumerate(val.get("issues", []), start=1):
@@ -842,7 +783,7 @@ def generate_html_report(vehicles, global_duration):
 
                 dist_val = f"{val['distance']} km" if status != 'inactive' else "Nil"
                 dur_val = val['duration'] if status != 'inactive' else "Nil"
-                
+
                 extra_kpi_row = ""
                 if status == 'mdm_issue':
                     extra_kpi_row = f"""
@@ -867,7 +808,7 @@ def generate_html_report(vehicles, global_duration):
                 <tr>
                   <td>
                     <span style="font-size: 14px; font-weight: 700; color: #0f172a; font-family: Courier, monospace;">VIN: {vin}</span>
-                    <div style="font-size: 9px; color: #64748b; margin-top: 2px;line-height:1.3;">Nickname: <strong>{val['nickname']}</strong> &nbsp;|&nbsp; Location: <strong>{val['location']}</strong></div>
+                    <div style="font-size: 9px; color: #64748b; margin-top: 2px;line-height:1.3;">Nickname: <strong><a href="#vin-{vin}" class="vehicle-link" style="color: #2563eb; text-decoration: underline; text-underline-offset: 3px; font-weight: 600; cursor: pointer;">{val['nickname']}</a></strong> &nbsp;|&nbsp; Location: <strong>{val['location']}</strong></div>
                   </td>
                   <td style="text-align: right; vertical-align: top;">
                     {status_header}
@@ -899,7 +840,7 @@ def generate_html_report(vehicles, global_duration):
                   <td width="25%" style="padding-left: 8px;">
                     <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 5px; text-align: center;">
                       <div style="font-size: 5px; color: #64748b; text-transform: uppercase; margin-bottom: 2px;">Total Issues Logged</div>
-                      <div style="font-size: 11px; font-weight: 700; color: { '#16a34a' if status == 'healthy' else ('#64748b' if status == 'inactive' else ('#ea580c' if status == 'mdm_issue' else '#dc2626')) };">{len(val.get('issues', []))}</div>
+                      <div style="font-size: 11px; font-weight: 700; color: {'#16a34a' if status == 'healthy' else ('#64748b' if status == 'inactive' else ('#ea580c' if status == 'mdm_issue' else '#dc2626'))};">{len(val.get('issues', []))}</div>
                     </div>
                   </td>
                 </tr>
@@ -951,10 +892,6 @@ def generate_html_report(vehicles, global_duration):
     except Exception as e:
         print(f"⚠️ Warning: Could not write HTML Email Report to disk ({e})")
 
-import http.server
-import socketserver
-import threading
-import time
 
 class CustomHandler(http.server.SimpleHTTPRequestHandler):
     def log_message(self, format, *args):
@@ -974,14 +911,15 @@ class CustomHandler(http.server.SimpleHTTPRequestHandler):
         if self.path == '/api/status':
             db_connected = False
             db_error = None
-            db_type = "SQLite" if not os.environ.get("DATABASE_URL") else "PostgreSQL"
+            db_type = "SQLite" if not os.environ.get(
+                "DATABASE_URL") else "PostgreSQL"
             try:
                 conn = get_db_connection()
                 conn.close()
                 db_connected = True
             except Exception as e:
                 db_error = str(e)
-            
+
             self.send_response(200)
             self.send_header('Content-Type', 'application/json')
             self.end_headers()
@@ -1008,29 +946,37 @@ class CustomHandler(http.server.SimpleHTTPRequestHandler):
                 data = json.loads(post_data.decode('utf-8'))
                 vehicles = data.get("vehicles", {})
                 global_duration = data.get("global_duration", "")
-                
+                problems = issue_report.validate_vehicles(vehicles)
+                if problems:
+                    raise ValueError(" ".join(problems))
+                vehicles = issue_report.normalize_vehicles(vehicles)
+
                 # Save state back to builder
                 save_state_to_builder(vehicles, global_duration)
-                
+
                 # Generate report
                 generate_html_report(vehicles, global_duration)
-                
+
                 self.send_response(200)
                 self.send_header('Content-Type', 'application/json')
                 self.end_headers()
-                self.wfile.write(json.dumps({"status": "success"}).encode('utf-8'))
+                self.wfile.write(json.dumps(
+                    {"status": "success"}).encode('utf-8'))
             except Exception as e:
                 self.send_response(500)
                 self.send_header('Content-Type', 'application/json')
                 self.end_headers()
-                self.wfile.write(json.dumps({"status": "error", "message": str(e)}).encode('utf-8'))
+                self.wfile.write(json.dumps(
+                    {"status": "error", "message": str(e)}).encode('utf-8'))
             return
-        
+
         self.send_response(404)
         self.end_headers()
 
+
 class CustomTCPServer(socketserver.TCPServer):
     allow_reuse_address = True
+
 
 def open_browser(port):
     time.sleep(1.5)
@@ -1038,44 +984,20 @@ def open_browser(port):
     print(f"\n🚀 Opening visual builder in browser: {file_url}\n")
     webbrowser.open(file_url)
 
+
 def main():
-    port = int(os.environ.get("PORT", 8000))
-    
-    print("==================================================")
-    print("    BOSON MOTOR - MULTI-VEHICLE REPORT GENERATOR")
-    print("==================================================")
-    print(f"Starting web server on port {port}...")
-    
-    # Launch browser only if NOT running in Render cloud environment
-    if "RENDER" not in os.environ:
-        threading.Thread(target=open_browser, args=(port,), daemon=True).start()
-    else:
-        print("Running in Cloud Environment (Render). Browser launching disabled.")
-        
     try:
-        # Change cwd to script directory to serve correct files
+        import app as app_module
+        app_module.main()
+    except Exception as e:
+        print(f"Starting server via fallback: {e}")
+        port = int(os.environ.get("PORT", 8000))
         dir_path = os.path.dirname(os.path.abspath(__file__))
         os.chdir(dir_path)
-        
-        # Load state from database on startup to rebuild the HTML builder file
-        try:
-            startup_state = load_previous_vehicles()
-            if startup_state:
-                save_state_to_builder(startup_state.get("vehicles", {}), startup_state.get("global_duration", ""))
-                print("✅ Successfully restored last saved state from database on startup.")
-        except Exception as startup_err:
-            print(f"⚠️ Warning: Could not restore database state on startup ({startup_err})")
-        
         with CustomTCPServer(("0.0.0.0", port), CustomHandler) as httpd:
             print(f"Server is running at http://0.0.0.0:{port}")
-            print("Press Ctrl+C to stop the server.")
             httpd.serve_forever()
-    except KeyboardInterrupt:
-        print("\nShutting down server.")
-    except Exception as e:
-        print(f"\n❌ Error starting server: {e}")
+
 
 if __name__ == "__main__":
     main()
-
-
