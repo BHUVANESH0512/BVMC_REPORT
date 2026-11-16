@@ -1,28 +1,26 @@
-# Python virtual environment
+# Node dependencies
+node_modules/
+dist/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Python virtual environment (legacy)
 venv/
 env/
 ENV/
 .venv/
-
-# Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
-*$py.class
 
-# macOS system files
+# macOS / Windows system files
 .DS_Store
-.AppleDouble
-.LSOverride
-
-# Environment variables
-.env.local
-
-# SQLite Database (uncomment if you want local database excluded from git)
-# *.db
-
-# Temporary upload files
-app/uploads/*
-!app/uploads/.gitkeep
+Thumbs.db
 
 # IDE configuration
 .vscode/

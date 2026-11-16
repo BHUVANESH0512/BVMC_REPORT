@@ -1,0 +1,15 @@
+{
+  "name": "bvmc-report",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Boson Vehicle Mission Capture & Reporting Dashboard (100% JavaScript + Supabase + Vercel)",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js",
+    "test": "node test_js_modules.js"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.49.1"
+  }
+}

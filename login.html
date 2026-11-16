@@ -201,8 +201,10 @@
     </a>
   </div>
 
-  <script>
-    async function handleLogin(event) {
+  <script type="module">
+    import { supabase, isSupabaseConfigured } from './js/supabaseClient.js';
+
+    window.handleLogin = async function(event) {
       event.preventDefault();
       const username = document.getElementById('username').value.trim();
       const password = document.getElementById('password').value;
@@ -214,36 +216,55 @@
       submitBtn.disabled = true;
       submitBtn.innerHTML = 'Authenticating...';
 
+      const urlParams = new URLSearchParams(window.location.search);
+      const nextUrl = urlParams.get('next') || '/vehicle_mission_report-4.html';
+
       try {
-        const res = await fetch('/api/login', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ username, password })
-        });
+        let authSuccess = false;
 
-        const data = await res.json();
+        // 1. Try Supabase Auth if configured
+        if (isSupabaseConfigured()) {
+          const email = username.includes('@') ? username : `${username}@bosonmotors.com`;
+          const { data, error } = await supabase.auth.signInWithPassword({
+            email: email,
+            password: password
+          });
 
-        if (res.ok && data.status === 'success') {
-          // Get next url or default to /owner
-          const urlParams = new URLSearchParams(window.location.search);
-          const nextUrl = urlParams.get('next') || '/owner';
+          if (!error && data?.session) {
+            authSuccess = true;
+            localStorage.setItem('bvmc_owner_session', JSON.stringify({
+              user: data.user,
+              timestamp: Date.now()
+            }));
+          }
+        }
+
+        // 2. Default credentials fallback (admin / boson2026)
+        if (!authSuccess && username === 'admin' && password === 'boson2026') {
+          authSuccess = true;
+          localStorage.setItem('bvmc_owner_session', JSON.stringify({
+            username: 'admin',
+            role: 'owner',
+            timestamp: Date.now()
+          }));
+        }
+
+        if (authSuccess) {
           window.location.href = nextUrl;
         } else {
-          errorMsg.textContent = data.message || 'Invalid username or password';
+          errorMsg.textContent = 'Invalid username or password.';
           errorBox.style.display = 'flex';
           submitBtn.disabled = false;
           submitBtn.innerHTML = '<span>Sign In to Owner Portal</span> &rarr;';
         }
       } catch (err) {
         console.error('Login error:', err);
-        errorMsg.textContent = 'Server connection error. Please try again.';
+        errorMsg.textContent = 'Authentication error. Please try again.';
         errorBox.style.display = 'flex';
         submitBtn.disabled = false;
         submitBtn.innerHTML = '<span>Sign In to Owner Portal</span> &rarr;';
       }
-    }
+    };
   </script>
 
 </body>

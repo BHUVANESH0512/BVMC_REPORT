@@ -279,7 +279,10 @@
   </main>
 </div>
 
-<script>
+<script type="module">
+  import { getAllReports } from '../js/fleetApi.js';
+  import { generateHtmlReportContent } from '../js/emailReportGenerator.js';
+
   // Initial fallback reports array
   let REPORTS = [
     {
@@ -368,31 +371,36 @@
 
     // Ensure file path resolves correctly
     let filePath = report.file;
-    if (!filePath.startsWith("http") && !filePath.startsWith("/")) {
+    if (filePath && !filePath.startsWith("http") && !filePath.startsWith("/")) {
       filePath = "/" + filePath;
     }
-    const versionedFilePath = withVersion(filePath);
-    frame.src = versionedFilePath;
+    const versionedFilePath = filePath ? withVersion(filePath) : null;
+    
+    if (versionedFilePath) {
+      frame.src = versionedFilePath;
+    } else if (report.vehicles && Object.keys(report.vehicles).length > 0) {
+      frame.srcdoc = generateHtmlReportContent(report.vehicles, report.range || '');
+    }
+
     frame.style.display = "block";
     emptyState.style.display = "none";
 
-    if (openExternalBtn) {
+    if (openExternalBtn && versionedFilePath) {
       openExternalBtn.href = versionedFilePath;
       openExternalBtn.style.display = "inline-flex";
+    } else if (openExternalBtn) {
+      openExternalBtn.style.display = "none";
     }
   }
 
   async function fetchReports() {
     try {
-      const res = await fetch('/api/reports');
-      if (res.ok) {
-        const data = await res.json();
-        if (Array.isArray(data) && data.length > 0) {
-          REPORTS = data;
-        }
+      const data = await getAllReports();
+      if (Array.isArray(data) && data.length > 0) {
+        REPORTS = data;
       }
     } catch (e) {
-      console.warn("Could not fetch reports from API, using default/cached list:", e);
+      console.warn("Could not fetch reports from Supabase, using default list:", e);
     }
     renderList();
     
