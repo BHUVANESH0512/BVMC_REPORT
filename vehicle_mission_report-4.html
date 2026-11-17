@@ -1483,32 +1483,31 @@
 
     function onCalDayClick(year, month, day) {
       const clicked = new Date(year, month, day);
+      const durationInput = document.getElementById('global-duration-input');
+
       if (!calFromDate || (calFromDate && calToDate)) {
-        // 1st click: selects start date
+        // 1st click (or 3rd click to restart): sets start date
         calFromDate = clicked;
         calToDate = null;
+        if (durationInput) {
+          durationInput.value = formatDateDDMMYYYY(calFromDate);
+        }
         renderCalendarGrid();
-      } else if (calFromDate && !calToDate) {
-        // 2nd click: selects end date and auto-applies
+      } else {
+        // 2nd click: sets end date and highlights Nov 1 through Nov 20
         if (clicked < calFromDate) {
           calToDate = calFromDate;
           calFromDate = clicked;
         } else {
           calToDate = clicked;
         }
-        renderCalendarGrid();
-
-        const str = `${formatDateDDMMYYYY(calFromDate)} to ${formatDateDDMMYYYY(calToDate)}`;
-        const durationInput = document.getElementById('global-duration-input');
+        const rangeStr = `${formatDateDDMMYYYY(calFromDate)} to ${formatDateDDMMYYYY(calToDate)}`;
         if (durationInput) {
-          durationInput.value = str;
+          durationInput.value = rangeStr;
         }
+        renderCalendarGrid();
         onDurationInputChanged();
         onDurationInputSaved();
-
-        setTimeout(() => {
-          toggleCalendarPopup(false);
-        }, 220);
       }
     }
 
@@ -1531,6 +1530,11 @@
       const daysInPrevMonth = new Date(year, month, 0).getDate();
       const daysInMonth = new Date(year, month + 1, 0).getDate();
 
+      // Normalize dates for clean range comparison
+      const toMid = (d) => d ? new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime() : 0;
+      const fromMid = toMid(calFromDate);
+      const toMidVal = toMid(calToDate);
+
       // Previous month padding days
       for (let i = startDayIndex - 1; i >= 0; i--) {
         const d = daysInPrevMonth - i;
@@ -1547,6 +1551,7 @@
       // Current month days
       for (let day = 1; day <= daysInMonth; day++) {
         const thisDate = new Date(year, month, day);
+        const thisMid = toMid(thisDate);
         const cell = document.createElement('button');
         cell.type = 'button';
         cell.textContent = day;
@@ -1560,19 +1565,20 @@
         cell.style.background = 'transparent';
         cell.style.color = '#1e293b';
 
-        // Check if in range
-        let isStart = calFromDate && (thisDate.toDateString() === calFromDate.toDateString());
-        let isEnd = calToDate && (thisDate.toDateString() === calToDate.toDateString());
-        let isInRange = calFromDate && calToDate && (thisDate > calFromDate && thisDate < calToDate);
+        // Check range state
+        const isStart = calFromDate && (thisMid === fromMid);
+        const isEnd = calToDate && (thisMid === toMidVal);
+        const isInRange = calFromDate && calToDate && (thisMid > fromMid && thisMid < toMidVal);
 
         if (isStart || isEnd) {
           cell.style.background = '#2563eb';
           cell.style.color = '#ffffff';
           cell.style.fontWeight = '700';
-          cell.style.borderRadius = isStart && !calToDate ? '6px' : (isStart ? '6px 0 0 6px' : '0 6px 6px 0');
+          cell.style.borderRadius = (isStart && !calToDate) ? '6px' : (isStart ? '6px 0 0 6px' : '0 6px 6px 0');
         } else if (isInRange) {
-          cell.style.background = '#3b82f6';
-          cell.style.color = '#ffffff';
+          cell.style.background = '#dbeafe';
+          cell.style.color = '#1e40af';
+          cell.style.fontWeight = '600';
           cell.style.borderRadius = '0';
         } else {
           cell.style.borderRadius = '4px';
@@ -1583,27 +1589,6 @@
         cell.onclick = () => onCalDayClick(year, month, day);
         grid.appendChild(cell);
       }
-    }
-
-    function applyTimeRange() {
-      if (!calFromDate && !calToDate) {
-        toggleCalendarPopup(false);
-        return;
-      }
-      let finalFrom = calFromDate || calToDate;
-      let finalTo = calToDate || calFromDate;
-      if (finalFrom > finalTo) {
-        const tmp = finalFrom; finalFrom = finalTo; finalTo = tmp;
-      }
-
-      const str = `${formatDateDDMMYYYY(finalFrom)} to ${formatDateDDMMYYYY(finalTo)}`;
-      const durationInput = document.getElementById('global-duration-input');
-      if (durationInput) {
-        durationInput.value = str;
-      }
-      toggleCalendarPopup(false);
-      onDurationInputChanged();
-      onDurationInputSaved();
     }
 
     // Close calendar popup when clicking outside
