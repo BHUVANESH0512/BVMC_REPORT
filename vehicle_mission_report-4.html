@@ -1346,8 +1346,8 @@
         addVersionRow('VCU Firmware Version', '');
       }
 
-      // Check authentication session
-      const sessionStr = localStorage.getItem('bvmc_owner_session');
+      // Check authentication session (localStorage OR sessionStorage)
+      const sessionStr = localStorage.getItem('bvmc_owner_session') || sessionStorage.getItem('bvmc_owner_session');
       if (!sessionStr && typeof window !== 'undefined') {
         const urlParams = new URLSearchParams(window.location.search);
         if (!urlParams.has('demo')) {

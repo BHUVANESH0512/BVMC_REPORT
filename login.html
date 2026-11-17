@@ -56,13 +56,6 @@
       margin-bottom: 12px;
     }
 
-    .login-header h1 {
-      margin: 0;
-      font-size: 20px;
-      font-weight: 700;
-      letter-spacing: -0.3px;
-    }
-
     .login-header p {
       margin: 6px 0 0 0;
       color: #94a3b8;
@@ -112,9 +105,12 @@
       padding: 10px 14px;
       border-radius: 6px;
       margin-bottom: 20px;
-      display: flex;
       align-items: center;
       gap: 8px;
+    }
+
+    .error-banner.visible {
+      display: flex;
     }
 
     .btn-login {
@@ -176,27 +172,29 @@
     </div>
 
     <div class="login-body">
-      <div id="error-box" class="error-banner" style="display: none;">
+      <div id="error-box" class="error-banner">
         <span>⚠️</span>
         <span id="error-message">Invalid username or password.</span>
       </div>
 
-      <form id="login-form" action="javascript:void(0);" onsubmit="return false;" autocomplete="on">
-        <div class="form-group">
-          <label for="username">Username</label>
-          <input type="text" id="username" name="username" placeholder="Enter owner username" required autofocus autocomplete="username">
-        </div>
+      <div class="form-group">
+        <label for="username">Username</label>
+        <input type="text" id="username" name="username" placeholder="Enter owner username"
+               autofocus autocomplete="username"
+               onkeydown="if(event.key==='Enter'){document.getElementById('password').focus();}">
+      </div>
 
-        <div class="form-group">
-          <label for="password">Password</label>
-          <input type="password" id="password" name="password" placeholder="Enter owner password" required autocomplete="current-password">
-        </div>
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password" placeholder="Enter owner password"
+               autocomplete="current-password"
+               onkeydown="if(event.key==='Enter'){doLogin();}">
+      </div>
 
-        <button type="submit" id="submit-btn" class="btn-login">
-          <span id="btn-text">Sign In to Owner Portal</span>
-          <span id="login-arrow">&rarr;</span>
-        </button>
-      </form>
+      <button type="button" id="submit-btn" class="btn-login" onclick="doLogin()">
+        <span id="btn-text">Sign In to Owner Portal</span>
+        <span id="login-arrow">&rarr;</span>
+      </button>
     </div>
   </div>
 
@@ -207,91 +205,75 @@
   </div>
 
   <script>
-    (function() {
-      // Determine target redirect URL
-      const urlParams = new URLSearchParams(window.location.search);
-      const rawNext = urlParams.get('next') || '/vehicle_mission_report-4.html';
-      const nextUrl = (rawNext === '/owner' || rawNext === '/admin') ? '/vehicle_mission_report-4.html' : rawNext;
+    // ── Determine where to redirect after successful login ──────────────────
+    var _nextUrl = (function() {
+      var params = new URLSearchParams(window.location.search);
+      var raw = params.get('next') || '';
+      // Normalize /owner and /admin aliases to the actual file
+      if (!raw || raw === '/owner' || raw === '/admin') {
+        return '/vehicle_mission_report-4.html';
+      }
+      // Safety: only allow relative redirects (no open redirect)
+      if (raw.charAt(0) !== '/') return '/vehicle_mission_report-4.html';
+      return raw;
+    })();
 
-      // Auto-redirect if already authenticated
+    // ── Auto-redirect if a valid session already exists ──────────────────────
+    (function() {
       try {
-        const existingSession = localStorage.getItem('bvmc_owner_session');
-        if (existingSession) {
-          const parsed = JSON.parse(existingSession);
+        var s = localStorage.getItem('bvmc_owner_session') || sessionStorage.getItem('bvmc_owner_session');
+        if (s) {
+          var parsed = JSON.parse(s);
           if (parsed && (parsed.username || parsed.user)) {
-            window.location.replace(nextUrl);
-            return;
+            window.location.replace(_nextUrl);
           }
         }
-      } catch (e) {
-        // Ignore session parse error
+      } catch (e) { /* ignore */ }
+    })();
+
+    // ── Main login function — called by button onclick and Enter key ─────────
+    function doLogin() {
+      var username = (document.getElementById('username').value || '').trim();
+      var password = document.getElementById('password').value || '';
+      var errorBox = document.getElementById('error-box');
+      var submitBtn = document.getElementById('submit-btn');
+      var btnText = document.getElementById('btn-text');
+
+      // Clear any previous error
+      errorBox.classList.remove('visible');
+
+      if (!username || !password) {
+        document.getElementById('error-message').textContent = 'Please enter both username and password.';
+        errorBox.classList.add('visible');
+        return;
       }
 
-      const form = document.getElementById('login-form');
-      const usernameInput = document.getElementById('username');
-      const passwordInput = document.getElementById('password');
-      const errorBox = document.getElementById('error-box');
-      const errorMsg = document.getElementById('error-message');
-      const submitBtn = document.getElementById('submit-btn');
-      const btnText = document.getElementById('btn-text');
-
-      form.addEventListener('submit', async function(event) {
-        event.preventDefault();
-        event.stopPropagation();
-
-        const username = usernameInput.value.trim();
-        const password = passwordInput.value;
-
-        errorBox.style.display = 'none';
+      // ── Built-in owner credentials (works fully offline) ──────────────────
+      if ((username === 'admin' || username === 'owner') && password === 'boson2026') {
         submitBtn.disabled = true;
-        btnText.textContent = 'Authenticating...';
+        btnText.textContent = 'Redirecting…';
 
-        // 1. Direct validation for built-in credentials (instant & offline safe)
-        if ((username === 'admin' || username === 'owner') && password === 'boson2026') {
-          try {
-            localStorage.setItem('bvmc_owner_session', JSON.stringify({
-              username: username,
-              role: 'owner',
-              authenticated_at: new Date().toISOString()
-            }));
-          } catch (storageErr) {
-            console.warn('LocalStorage error:', storageErr);
-          }
-          window.location.replace(nextUrl);
-          return;
-        }
+        var session = JSON.stringify({
+          username: username,
+          role: 'owner',
+          authenticated_at: new Date().toISOString()
+        });
 
-        // 2. Fallback to Supabase Auth if credentials differ from default
-        try {
-          const supaModule = await import('./js/supabaseClient.js');
-          if (supaModule && supaModule.isSupabaseConfigured()) {
-            const email = username.includes('@') ? username : `${username}@bosonmotors.com`;
-            const { data, error } = await supaModule.supabase.auth.signInWithPassword({
-              email: email,
-              password: password
-            });
+        // Write to both storages so whichever the dashboard reads works
+        try { localStorage.setItem('bvmc_owner_session', session); } catch (e) {}
+        try { sessionStorage.setItem('bvmc_owner_session', session); } catch (e) {}
 
-            if (!error && data?.session) {
-              localStorage.setItem('bvmc_owner_session', JSON.stringify({
-                user: data.user.email,
-                token: data.session.access_token,
-                authenticated_at: new Date().toISOString()
-              }));
-              window.location.replace(nextUrl);
-              return;
-            }
-          }
-        } catch (supaErr) {
-          console.warn('Supabase Auth error:', supaErr);
-        }
+        // Small delay so the browser has a chance to flush storage before navigating
+        setTimeout(function() {
+          window.location.href = _nextUrl;
+        }, 50);
+        return;
+      }
 
-        // 3. If neither matched, display error without reloading
-        errorMsg.textContent = 'Invalid username or password.';
-        errorBox.style.display = 'flex';
-        submitBtn.disabled = false;
-        btnText.textContent = 'Sign In to Owner Portal';
-      });
-    })();
+      // ── Wrong credentials ─────────────────────────────────────────────────
+      document.getElementById('error-message').textContent = 'Invalid username or password.';
+      errorBox.classList.add('visible');
+    }
   </script>
 
 </body>
