@@ -3,7 +3,7 @@
  * Provides initialized Supabase client and authentication helpers.
  */
 
-import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+import { createClient } from './supabase.js';
 
 // Read from Vite environment variables or window globals
 const supabaseUrl = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_SUPABASE_URL)
