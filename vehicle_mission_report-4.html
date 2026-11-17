@@ -2464,13 +2464,9 @@
             window.deleteCurrentReportPeriod = deleteCurrentReportPeriod;
             window.clearForm = clearForm;
             window.onSearchFocus = onSearchFocus;
+            window.onSearchInput = onSearchInput;
             window.setMode = setMode;
             window.setRegion = setRegion;
-            window.toggleCalPopup = toggleCalPopup;
-            window.closeAllCalPopups = closeAllCalPopups;
-            window.changeCalMonth = changeCalMonth;
-            window.onSelectCalDate = onSelectCalDate;
-            window.onDateInputManualChange = onDateInputManualChange;
             window.setStatus = setStatus;
             window.addIssue = addIssue;
             window.resetIssueForm = resetIssueForm;
@@ -2489,9 +2485,9 @@
             window.onDeleteSavedPeriod = deleteCurrentReportPeriod;
             window.saveStateToServer = saveStateToServer;
             window.checkDatabaseStatusUI = checkDatabaseStatusUI;
-            window.selectPredefined = selectPredefined;
-            window.filterPredefined = filterPredefined;
             window.updateReportPreview = updateReportPreview;
+            window.onDurationInputChanged = onDurationInputChanged;
+            window.onDurationInputSaved = onDurationInputSaved;
             window.handleLogout = async function (event) {
               if (event) {
                 try { event.preventDefault(); } catch (e) { }
