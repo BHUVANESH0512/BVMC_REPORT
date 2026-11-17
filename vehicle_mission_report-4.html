@@ -584,53 +584,30 @@
             <span onclick="toggleCalendarPopup()" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); cursor: pointer; font-size: 16px; user-select: none;">📅</span>
           </div>
 
-          <!-- Grafana-style Time Range Picker Dropdown (Matches Photo 1) -->
-          <div id="calendar-popup" style="display: none; position: absolute; top: calc(100% + 4px); left: 0; z-index: 1000; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.15); width: 560px; max-width: 95vw; padding: 16px; box-sizing: border-box;">
+          <!-- Calendar Range Picker Dropdown -->
+          <div id="calendar-popup" style="display: none; position: absolute; top: calc(100% + 4px); left: 0; z-index: 1000; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.15); width: 290px; padding: 14px; box-sizing: border-box;">
             <!-- Header -->
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid #f1f5f9; padding-bottom: 8px;">
-              <span style="font-size: 13px; font-weight: 700; color: #0f172a;">Select a time range</span>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border-bottom: 1px solid #f1f5f9; padding-bottom: 8px;">
+              <span style="font-size: 13px; font-weight: 700; color: #0f172a;">Select Date Range</span>
               <span onclick="toggleCalendarPopup(false)" style="cursor: pointer; font-size: 18px; color: #94a3b8; font-weight: bold; line-height: 1; padding: 0 4px;">&times;</span>
             </div>
 
-            <!-- Two Columns matching user Photo 1 -->
-            <div style="display: flex; gap: 16px; flex-wrap: wrap;">
-              <!-- Left: Month Calendar -->
-              <div style="flex: 1.1; min-width: 240px;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                  <button type="button" onclick="changeCalMonth(-1)" style="border: 1px solid #e2e8f0; background: #f8fafc; border-radius: 4px; padding: 3px 8px; cursor: pointer; font-weight: bold; color: #475569;">&lt;</button>
-                  <span id="cal-month-label" style="font-size: 13px; font-weight: 700; color: #1e293b;"></span>
-                  <button type="button" onclick="changeCalMonth(1)" style="border: 1px solid #e2e8f0; background: #f8fafc; border-radius: 4px; padding: 3px 8px; cursor: pointer; font-weight: bold; color: #475569;">&gt;</button>
-                </div>
-                <div style="display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; font-size: 11px; font-weight: 600; color: #2563eb; margin-bottom: 4px;">
-                  <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
-                </div>
-                <div id="cal-grid" style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px;">
-                  <!-- Dynamic day buttons -->
-                </div>
+            <!-- Month Calendar -->
+            <div>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <button type="button" onclick="changeCalMonth(-1)" style="border: 1px solid #e2e8f0; background: #f8fafc; border-radius: 4px; padding: 3px 8px; cursor: pointer; font-weight: bold; color: #475569;">&lt;</button>
+                <span id="cal-month-label" style="font-size: 13px; font-weight: 700; color: #1e293b;"></span>
+                <button type="button" onclick="changeCalMonth(1)" style="border: 1px solid #e2e8f0; background: #f8fafc; border-radius: 4px; padding: 3px 8px; cursor: pointer; font-weight: bold; color: #475569;">&gt;</button>
               </div>
-
-              <!-- Right: Absolute time range & Apply button -->
-              <div style="flex: 1; min-width: 200px; display: flex; flex-direction: column; justify-content: space-between; border-left: 1px solid #f1f5f9; padding-left: 16px;">
-                <div>
-                  <div style="font-size: 12px; font-weight: 700; color: #0f172a; margin-bottom: 10px;">Absolute time range</div>
-                  
-                  <div style="margin-bottom: 10px;">
-                    <label style="font-size: 11px; color: #64748b; font-weight: 600; display: block; margin-bottom: 2px;">From</label>
-                    <input type="date" id="cal-from-input" onchange="onManualCalDateChange()" style="width: 100%; padding: 6px 8px; border-radius: 4px; border: 1px solid #cbd5e1; font-size: 12px; font-family: monospace; box-sizing: border-box; background: #fff;">
-                  </div>
-
-                  <div style="margin-bottom: 14px;">
-                    <label style="font-size: 11px; color: #64748b; font-weight: 600; display: block; margin-bottom: 2px;">To</label>
-                    <input type="date" id="cal-to-input" onchange="onManualCalDateChange()" style="width: 100%; padding: 6px 8px; border-radius: 4px; border: 1px solid #cbd5e1; font-size: 12px; font-family: monospace; box-sizing: border-box; background: #fff;">
-                  </div>
-                </div>
-
-                <div>
-                  <button type="button" onclick="applyTimeRange()" class="btn-primary" style="width: 100%; padding: 9px 12px; font-size: 13px; font-weight: 600; background: #2563eb; color: #ffffff; border: none; border-radius: 6px; cursor: pointer; text-align: center;">
-                    Apply time range
-                  </button>
-                </div>
+              <div style="display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; font-size: 11px; font-weight: 600; color: #2563eb; margin-bottom: 4px;">
+                <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
               </div>
+              <div id="cal-grid" style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px;">
+                <!-- Dynamic day buttons -->
+              </div>
+            </div>
+            <div style="margin-top: 8px; font-size: 11px; color: #64748b; text-align: center;">
+              Click start date, then click end date
             </div>
           </div>
         </div>
@@ -1492,7 +1469,6 @@
         } else {
           calViewDate = new Date();
         }
-        syncCalInputsFromDates();
         renderCalendarGrid();
         popup.style.display = 'block';
       } else {
@@ -1505,46 +1481,35 @@
       renderCalendarGrid();
     }
 
-    function syncCalInputsFromDates() {
-      const fromInput = document.getElementById('cal-from-input');
-      const toInput = document.getElementById('cal-to-input');
-      if (fromInput) fromInput.value = calFromDate ? formatDateYYYYMMDD(calFromDate) : '';
-      if (toInput) toInput.value = calToDate ? formatDateYYYYMMDD(calToDate) : '';
-    }
-
-    function onManualCalDateChange() {
-      const fromVal = document.getElementById('cal-from-input')?.value;
-      const toVal = document.getElementById('cal-to-input')?.value;
-      if (fromVal) {
-        const p = fromVal.split('-');
-        calFromDate = new Date(parseInt(p[0], 10), parseInt(p[1], 10) - 1, parseInt(p[2], 10));
-      } else {
-        calFromDate = null;
-      }
-      if (toVal) {
-        const p = toVal.split('-');
-        calToDate = new Date(parseInt(p[0], 10), parseInt(p[1], 10) - 1, parseInt(p[2], 10));
-      } else {
-        calToDate = null;
-      }
-      renderCalendarGrid();
-    }
-
     function onCalDayClick(year, month, day) {
       const clicked = new Date(year, month, day);
       if (!calFromDate || (calFromDate && calToDate)) {
+        // 1st click: selects start date
         calFromDate = clicked;
         calToDate = null;
+        renderCalendarGrid();
       } else if (calFromDate && !calToDate) {
+        // 2nd click: selects end date and auto-applies
         if (clicked < calFromDate) {
           calToDate = calFromDate;
           calFromDate = clicked;
         } else {
           calToDate = clicked;
         }
+        renderCalendarGrid();
+
+        const str = `${formatDateDDMMYYYY(calFromDate)} to ${formatDateDDMMYYYY(calToDate)}`;
+        const durationInput = document.getElementById('global-duration-input');
+        if (durationInput) {
+          durationInput.value = str;
+        }
+        onDurationInputChanged();
+        onDurationInputSaved();
+
+        setTimeout(() => {
+          toggleCalendarPopup(false);
+        }, 220);
       }
-      syncCalInputsFromDates();
-      renderCalendarGrid();
     }
 
     function renderCalendarGrid() {
@@ -2620,8 +2585,6 @@
     window.setRegion = setRegion;
     window.toggleCalendarPopup = toggleCalendarPopup;
     window.changeCalMonth = changeCalMonth;
-    window.onManualCalDateChange = onManualCalDateChange;
-    window.applyTimeRange = applyTimeRange;
     window.setStatus = setStatus;
     window.addIssue = addIssue;
     window.resetIssueForm = resetIssueForm;
