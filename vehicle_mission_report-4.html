@@ -572,44 +572,76 @@
           </select>
         </div>
 
-        <div class="form-group" style="margin-bottom: 0; position: relative;">
+        <div class="form-group" style="margin-bottom: 0;">
           <label style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
             <span>Global Report Duration Range</span>
             <span id="duration-tz-badge" style="font-size: 11px; padding: 2px 8px; border-radius: 4px; font-weight: 600; background: #dcfce7; color: #16a34a; border: 1px solid #bbf7d0;">IST (UTC+5:30)</span>
           </label>
-          <div style="position: relative;">
-            <input type="text" id="global-duration-input" placeholder="Click to select date range (e.g. 01-11-2026 to 15-11-2026)"
-                   readonly onclick="toggleCalendarPopup()"
-                   style="width: 100%; padding: 10px 40px 10px 12px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 13px; font-weight: 600; background: #ffffff; color: #0f172a; cursor: pointer; box-sizing: border-box;">
-            <span onclick="toggleCalendarPopup()" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); cursor: pointer; font-size: 16px; user-select: none;">📅</span>
+          
+          <div style="display: flex; gap: 10px; align-items: center;">
+            <!-- START DATE PICKER -->
+            <div style="flex: 1; position: relative;">
+              <span style="font-size: 11px; color: #64748b; font-weight: 600; display: block; margin-bottom: 3px;">START DATE</span>
+              <div style="position: relative;">
+                <input type="text" id="start-date-input" placeholder="DD-MM-YYYY" oninput="onDateInputManualChange()" onclick="toggleCalPopup('start')"
+                       style="width: 100%; padding: 9px 34px 9px 10px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 13px; font-weight: 600; background: #ffffff; color: #0f172a; cursor: pointer; box-sizing: border-box;">
+                <span onclick="toggleCalPopup('start')" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); cursor: pointer; font-size: 15px; user-select: none;">📅</span>
+              </div>
+
+              <!-- Start Date Calendar Dropdown -->
+              <div id="start-cal-popup" style="display: none; position: absolute; top: calc(100% + 4px); left: 0; z-index: 1000; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.15); width: 280px; padding: 12px; box-sizing: border-box;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; border-bottom: 1px solid #f1f5f9; padding-bottom: 6px;">
+                  <span style="font-size: 12px; font-weight: 700; color: #0f172a;">Select Start Date</span>
+                  <span onclick="closeAllCalPopups()" style="cursor: pointer; font-size: 16px; color: #94a3b8; font-weight: bold; line-height: 1; padding: 0 4px;">&times;</span>
+                </div>
+                <div>
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <button type="button" onclick="changeCalMonth('start', -1)" style="border: 1px solid #e2e8f0; background: #f8fafc; border-radius: 4px; padding: 2px 7px; cursor: pointer; font-weight: bold; color: #475569;">&lt;</button>
+                    <span id="start-cal-month-label" style="font-size: 12px; font-weight: 700; color: #1e293b;"></span>
+                    <button type="button" onclick="changeCalMonth('start', 1)" style="border: 1px solid #e2e8f0; background: #f8fafc; border-radius: 4px; padding: 2px 7px; cursor: pointer; font-weight: bold; color: #475569;">&gt;</button>
+                  </div>
+                  <div style="display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; font-size: 11px; font-weight: 600; color: #2563eb; margin-bottom: 4px;">
+                    <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
+                  </div>
+                  <div id="start-cal-grid" style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px;"></div>
+                </div>
+              </div>
+            </div>
+
+            <div style="color: #64748b; font-weight: 700; font-size: 13px; margin-top: 18px;">to</div>
+
+            <!-- END DATE PICKER -->
+            <div style="flex: 1; position: relative;">
+              <span style="font-size: 11px; color: #64748b; font-weight: 600; display: block; margin-bottom: 3px;">END DATE</span>
+              <div style="position: relative;">
+                <input type="text" id="end-date-input" placeholder="DD-MM-YYYY" oninput="onDateInputManualChange()" onclick="toggleCalPopup('end')"
+                       style="width: 100%; padding: 9px 34px 9px 10px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 13px; font-weight: 600; background: #ffffff; color: #0f172a; cursor: pointer; box-sizing: border-box;">
+                <span onclick="toggleCalPopup('end')" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); cursor: pointer; font-size: 15px; user-select: none;">📅</span>
+              </div>
+
+              <!-- End Date Calendar Dropdown -->
+              <div id="end-cal-popup" style="display: none; position: absolute; top: calc(100% + 4px); right: 0; z-index: 1000; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.15); width: 280px; padding: 12px; box-sizing: border-box;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; border-bottom: 1px solid #f1f5f9; padding-bottom: 6px;">
+                  <span style="font-size: 12px; font-weight: 700; color: #0f172a;">Select End Date</span>
+                  <span onclick="closeAllCalPopups()" style="cursor: pointer; font-size: 16px; color: #94a3b8; font-weight: bold; line-height: 1; padding: 0 4px;">&times;</span>
+                </div>
+                <div>
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <button type="button" onclick="changeCalMonth('end', -1)" style="border: 1px solid #e2e8f0; background: #f8fafc; border-radius: 4px; padding: 2px 7px; cursor: pointer; font-weight: bold; color: #475569;">&lt;</button>
+                    <span id="end-cal-month-label" style="font-size: 12px; font-weight: 700; color: #1e293b;"></span>
+                    <button type="button" onclick="changeCalMonth('end', 1)" style="border: 1px solid #e2e8f0; background: #f8fafc; border-radius: 4px; padding: 2px 7px; cursor: pointer; font-weight: bold; color: #475569;">&gt;</button>
+                  </div>
+                  <div style="display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; font-size: 11px; font-weight: 600; color: #2563eb; margin-bottom: 4px;">
+                    <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
+                  </div>
+                  <div id="end-cal-grid" style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px;"></div>
+                </div>
+              </div>
+            </div>
           </div>
 
-          <!-- Calendar Range Picker Dropdown -->
-          <div id="calendar-popup" style="display: none; position: absolute; top: calc(100% + 4px); left: 0; z-index: 1000; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.15); width: 290px; padding: 14px; box-sizing: border-box;">
-            <!-- Header -->
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border-bottom: 1px solid #f1f5f9; padding-bottom: 8px;">
-              <span style="font-size: 13px; font-weight: 700; color: #0f172a;">Select Date Range</span>
-              <span onclick="toggleCalendarPopup(false)" style="cursor: pointer; font-size: 18px; color: #94a3b8; font-weight: bold; line-height: 1; padding: 0 4px;">&times;</span>
-            </div>
-
-            <!-- Month Calendar -->
-            <div>
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                <button type="button" onclick="changeCalMonth(-1)" style="border: 1px solid #e2e8f0; background: #f8fafc; border-radius: 4px; padding: 3px 8px; cursor: pointer; font-weight: bold; color: #475569;">&lt;</button>
-                <span id="cal-month-label" style="font-size: 13px; font-weight: 700; color: #1e293b;"></span>
-                <button type="button" onclick="changeCalMonth(1)" style="border: 1px solid #e2e8f0; background: #f8fafc; border-radius: 4px; padding: 3px 8px; cursor: pointer; font-weight: bold; color: #475569;">&gt;</button>
-              </div>
-              <div style="display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; font-size: 11px; font-weight: 600; color: #2563eb; margin-bottom: 4px;">
-                <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
-              </div>
-              <div id="cal-grid" style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px;">
-                <!-- Dynamic day buttons -->
-              </div>
-            </div>
-            <div style="margin-top: 8px; font-size: 11px; color: #64748b; text-align: center;">
-              Click start date, then click end date
-            </div>
-          </div>
+          <!-- Hidden input that preserves global-duration-input for all reports and sync -->
+          <input type="hidden" id="global-duration-input" value="">
         </div>
       </div>
 
@@ -1455,92 +1487,202 @@
       return `${year}-${month}-${day}`;
     }
 
-    function toggleCalendarPopup(forceState) {
-      const popup = document.getElementById('calendar-popup');
-      if (!popup) return;
-      const shouldOpen = (typeof forceState === 'boolean') ? forceState : (popup.style.display !== 'block');
-      if (shouldOpen) {
-        const currentVal = document.getElementById('global-duration-input')?.value || '';
-        const parsed = parseRangeToDates(currentVal);
-        calFromDate = parsed.from;
-        calToDate = parsed.to;
-        if (calFromDate) {
-          calViewDate = new Date(calFromDate.getFullYear(), calFromDate.getMonth(), 1);
-        } else {
-          calViewDate = new Date();
+    // TWO SEPARATE CALENDARS: START DATE & END DATE
+    let calStartMonth = new Date();
+    let calEndMonth = new Date();
+    let calStartDate = null;
+    let calEndDate = null;
+    const MONTH_NAMES = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+
+    function parseRangeToDates(rangeStr) {
+      if (!rangeStr) return { from: null, to: null };
+      const parts = rangeStr.split(/\s+to\s+/i);
+      function toDate(dStr) {
+        if (!dStr) return null;
+        const s = dStr.trim();
+        const m1 = s.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})/);
+        if (m1) {
+          return new Date(parseInt(m1[3], 10), parseInt(m1[2], 10) - 1, parseInt(m1[1], 10));
         }
-        renderCalendarGrid();
-        popup.style.display = 'block';
-      } else {
-        popup.style.display = 'none';
+        const m2 = s.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);
+        if (m2) {
+          return new Date(parseInt(m2[1], 10), parseInt(m2[2], 10) - 1, parseInt(m2[3], 10));
+        }
+        return null;
+      }
+      return { from: toDate(parts[0]), to: toDate(parts[1]) };
+    }
+
+    function formatDateDDMMYYYY(d) {
+      if (!d || isNaN(d.getTime())) return '';
+      const day = String(d.getDate()).padStart(2, '0');
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const year = d.getFullYear();
+      return `${day}-${month}-${year}`;
+    }
+
+    function toggleCalPopup(type) {
+      const startPopup = document.getElementById('start-cal-popup');
+      const endPopup = document.getElementById('end-cal-popup');
+      if (type === 'start') {
+        if (endPopup) endPopup.style.display = 'none';
+        if (startPopup) {
+          const isOpen = startPopup.style.display === 'block';
+          if (!isOpen) {
+            if (calStartDate) {
+              calStartMonth = new Date(calStartDate.getFullYear(), calStartDate.getMonth(), 1);
+            }
+            renderCalGrid('start');
+            startPopup.style.display = 'block';
+          } else {
+            startPopup.style.display = 'none';
+          }
+        }
+      } else if (type === 'end') {
+        if (startPopup) startPopup.style.display = 'none';
+        if (endPopup) {
+          const isOpen = endPopup.style.display === 'block';
+          if (!isOpen) {
+            if (calEndDate) {
+              calEndMonth = new Date(calEndDate.getFullYear(), calEndDate.getMonth(), 1);
+            } else if (calStartDate) {
+              calEndMonth = new Date(calStartDate.getFullYear(), calStartDate.getMonth(), 1);
+            }
+            renderCalGrid('end');
+            endPopup.style.display = 'block';
+          } else {
+            endPopup.style.display = 'none';
+          }
+        }
       }
     }
 
-    function changeCalMonth(delta) {
-      calViewDate.setMonth(calViewDate.getMonth() + delta);
-      renderCalendarGrid();
+    function closeAllCalPopups() {
+      const startPopup = document.getElementById('start-cal-popup');
+      const endPopup = document.getElementById('end-cal-popup');
+      if (startPopup) startPopup.style.display = 'none';
+      if (endPopup) endPopup.style.display = 'none';
     }
 
-    function onCalDayClick(year, month, day) {
-      const clicked = new Date(year, month, day);
+    function changeCalMonth(type, delta) {
+      if (type === 'start') {
+        calStartMonth.setMonth(calStartMonth.getMonth() + delta);
+        renderCalGrid('start');
+      } else {
+        calEndMonth.setMonth(calEndMonth.getMonth() + delta);
+        renderCalGrid('end');
+      }
+    }
+
+    function onSelectCalDate(type, year, month, day) {
+      const selected = new Date(year, month, day);
+      if (type === 'start') {
+        calStartDate = selected;
+        const startInput = document.getElementById('start-date-input');
+        if (startInput) startInput.value = formatDateDDMMYYYY(calStartDate);
+      } else {
+        calEndDate = selected;
+        const endInput = document.getElementById('end-date-input');
+        if (endInput) endInput.value = formatDateDDMMYYYY(calEndDate);
+      }
+
+      closeAllCalPopups();
+      updateCombinedDuration();
+    }
+
+    function onDateInputManualChange() {
+      const startInput = document.getElementById('start-date-input');
+      const endInput = document.getElementById('end-date-input');
+      const sVal = startInput ? startInput.value.trim() : '';
+      const eVal = endInput ? endInput.value.trim() : '';
+
+      const parsed = parseRangeToDates(sVal + ' to ' + (eVal || sVal));
+      if (parsed.from) {
+        calStartDate = parsed.from;
+        calStartMonth = new Date(calStartDate.getFullYear(), calStartDate.getMonth(), 1);
+      }
+      if (eVal && parsed.to) {
+        calEndDate = parsed.to;
+        calEndMonth = new Date(calEndDate.getFullYear(), calEndDate.getMonth(), 1);
+      }
+
       const durationInput = document.getElementById('global-duration-input');
-
-      if (!calFromDate || (calFromDate && calToDate)) {
-        // 1st click (or 3rd click to restart): sets start date
-        calFromDate = clicked;
-        calToDate = null;
-        if (durationInput) {
-          durationInput.value = formatDateDDMMYYYY(calFromDate);
-        }
-        renderCalendarGrid();
-      } else {
-        // 2nd click: sets end date and highlights Nov 1 through Nov 20
-        if (clicked < calFromDate) {
-          calToDate = calFromDate;
-          calFromDate = clicked;
-        } else {
-          calToDate = clicked;
-        }
-        const rangeStr = `${formatDateDDMMYYYY(calFromDate)} to ${formatDateDDMMYYYY(calToDate)}`;
-        if (durationInput) {
-          durationInput.value = rangeStr;
-        }
-        renderCalendarGrid();
-        onDurationInputChanged();
-        onDurationInputSaved();
+      if (durationInput) {
+        if (sVal && eVal) durationInput.value = `${sVal} to ${eVal}`;
+        else if (sVal) durationInput.value = sVal;
+        else if (eVal) durationInput.value = eVal;
+        else durationInput.value = '';
       }
+      onDurationInputChanged();
+      onDurationInputSaved();
     }
 
-    function renderCalendarGrid() {
-      const label = document.getElementById('cal-month-label');
-      const grid = document.getElementById('cal-grid');
+    function updateCombinedDuration() {
+      const startInput = document.getElementById('start-date-input');
+      const endInput = document.getElementById('end-date-input');
+      const durationInput = document.getElementById('global-duration-input');
+      const sVal = startInput ? startInput.value.trim() : '';
+      const eVal = endInput ? endInput.value.trim() : '';
+
+      if (durationInput) {
+        if (sVal && eVal) {
+          durationInput.value = `${sVal} to ${eVal}`;
+        } else if (sVal) {
+          durationInput.value = sVal;
+        } else if (eVal) {
+          durationInput.value = eVal;
+        } else {
+          durationInput.value = '';
+        }
+      }
+      onDurationInputChanged();
+      onDurationInputSaved();
+    }
+
+    function syncDateInputsFromDuration(rangeStr) {
+      const parsed = parseRangeToDates(rangeStr);
+      calStartDate = parsed.from;
+      calEndDate = parsed.to;
+      const startInput = document.getElementById('start-date-input');
+      const endInput = document.getElementById('end-date-input');
+      if (startInput) startInput.value = calStartDate ? formatDateDDMMYYYY(calStartDate) : (rangeStr && !rangeStr.includes(' to ') ? rangeStr : '');
+      if (endInput) endInput.value = calEndDate ? formatDateDDMMYYYY(calEndDate) : '';
+      if (calStartDate) calStartMonth = new Date(calStartDate.getFullYear(), calStartDate.getMonth(), 1);
+      if (calEndDate) calEndMonth = new Date(calEndDate.getFullYear(), calEndDate.getMonth(), 1);
+    }
+
+    function renderCalGrid(type) {
+      const isStart = (type === 'start');
+      const viewDate = isStart ? calStartMonth : calEndMonth;
+      const labelId = isStart ? 'start-cal-month-label' : 'end-cal-month-label';
+      const gridId = isStart ? 'start-cal-grid' : 'end-cal-grid';
+
+      const label = document.getElementById(labelId);
+      const grid = document.getElementById(gridId);
       if (!label || !grid) return;
 
-      const year = calViewDate.getFullYear();
-      const month = calViewDate.getMonth();
+      const year = viewDate.getFullYear();
+      const month = viewDate.getMonth();
       label.textContent = `${MONTH_NAMES[month]} ${year}`;
-
       grid.innerHTML = '';
 
-      // First day of month (Monday=0, Sunday=6)
       const firstDay = new Date(year, month, 1);
-      let startDayIndex = firstDay.getDay() - 1; // 0 for Mon, -1 for Sun
+      let startDayIndex = firstDay.getDay() - 1;
       if (startDayIndex === -1) startDayIndex = 6;
 
       const daysInPrevMonth = new Date(year, month, 0).getDate();
       const daysInMonth = new Date(year, month + 1, 0).getDate();
 
-      // Normalize dates for clean range comparison
       const toMid = (d) => d ? new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime() : 0;
-      const fromMid = toMid(calFromDate);
-      const toMidVal = toMid(calToDate);
+      const sMid = toMid(calStartDate);
+      const eMid = toMid(calEndDate);
 
-      // Previous month padding days
+      // Previous month padding
       for (let i = startDayIndex - 1; i >= 0; i--) {
         const d = daysInPrevMonth - i;
         const cell = document.createElement('div');
         cell.textContent = d;
-        cell.style.padding = '6px 2px';
+        cell.style.padding = '5px 2px';
         cell.style.textAlign = 'center';
         cell.style.fontSize = '12px';
         cell.style.color = '#cbd5e1';
@@ -1555,49 +1697,55 @@
         const cell = document.createElement('button');
         cell.type = 'button';
         cell.textContent = day;
-        cell.style.padding = '6px 2px';
+        cell.style.padding = '5px 2px';
         cell.style.textAlign = 'center';
         cell.style.fontSize = '12px';
         cell.style.fontWeight = '500';
         cell.style.border = 'none';
         cell.style.cursor = 'pointer';
         cell.style.userSelect = 'none';
-        cell.style.background = 'transparent';
-        cell.style.color = '#1e293b';
 
-        // Check range state
-        const isStart = calFromDate && (thisMid === fromMid);
-        const isEnd = calToDate && (thisMid === toMidVal);
-        const isInRange = calFromDate && calToDate && (thisMid > fromMid && thisMid < toMidVal);
+        const isStartDay = sMid && (thisMid === sMid);
+        const isEndDay = eMid && (thisMid === eMid);
+        const isInRange = sMid && eMid && (thisMid > sMid && thisMid < eMid);
 
-        if (isStart || isEnd) {
+        if (isStartDay || isEndDay) {
           cell.style.background = '#2563eb';
           cell.style.color = '#ffffff';
           cell.style.fontWeight = '700';
-          cell.style.borderRadius = (isStart && !calToDate) ? '6px' : (isStart ? '6px 0 0 6px' : '0 6px 6px 0');
+          cell.style.borderRadius = '6px';
         } else if (isInRange) {
           cell.style.background = '#dbeafe';
           cell.style.color = '#1e40af';
           cell.style.fontWeight = '600';
           cell.style.borderRadius = '0';
         } else {
+          cell.style.background = 'transparent';
+          cell.style.color = '#1e293b';
           cell.style.borderRadius = '4px';
-          cell.onmouseenter = () => { if (!cell.style.background || cell.style.background === 'transparent') cell.style.background = '#f1f5f9'; };
+          cell.onmouseenter = () => { if (cell.style.background === 'transparent') cell.style.background = '#f1f5f9'; };
           cell.onmouseleave = () => { if (cell.style.background === 'rgb(241, 245, 249)' || cell.style.background === '#f1f5f9') cell.style.background = 'transparent'; };
         }
 
-        cell.onclick = () => onCalDayClick(year, month, day);
+        cell.onclick = () => onSelectCalDate(type, year, month, day);
         grid.appendChild(cell);
       }
     }
 
-    // Close calendar popup when clicking outside
+    // Close calendar popups when clicking outside
     document.addEventListener('click', function(e) {
-      const popup = document.getElementById('calendar-popup');
-      const input = document.getElementById('global-duration-input');
-      if (popup && popup.style.display === 'block') {
-        if (!popup.contains(e.target) && e.target !== input && !e.target.closest('#calendar-popup')) {
-          popup.style.display = 'none';
+      const sPop = document.getElementById('start-cal-popup');
+      const ePop = document.getElementById('end-cal-popup');
+      const sInp = document.getElementById('start-date-input');
+      const eInp = document.getElementById('end-date-input');
+      if (sPop && sPop.style.display === 'block') {
+        if (!sPop.contains(e.target) && e.target !== sInp && !e.target.closest('#start-cal-popup')) {
+          sPop.style.display = 'none';
+        }
+      }
+      if (ePop && ePop.style.display === 'block') {
+        if (!ePop.contains(e.target) && e.target !== eInp && !e.target.closest('#end-cal-popup')) {
+          ePop.style.display = 'none';
         }
       }
     });
@@ -1630,6 +1778,7 @@
           activeFleet = state.vehicles;
           if (state.global_duration) {
             document.getElementById('global-duration-input').value = state.global_duration;
+            syncDateInputsFromDuration(state.global_duration);
           }
           updateFleetListUI();
         } else {
@@ -1641,6 +1790,7 @@
               activeFleet = parsed.vehicles;
               if (parsed.global_duration) {
                 document.getElementById('global-duration-input').value = parsed.global_duration;
+                syncDateInputsFromDuration(parsed.global_duration);
               }
               updateFleetListUI();
             }
@@ -1710,6 +1860,7 @@
 
       const newRange = report.range || rangeVal;
       document.getElementById('global-duration-input').value = newRange;
+      syncDateInputsFromDuration(newRange);
       
       if (report.vehicles && Object.keys(report.vehicles).length > 0) {
         activeFleet = JSON.parse(JSON.stringify(report.vehicles));
@@ -1760,6 +1911,7 @@
           onSelectSavedPeriod(SAVED_REPORTS[0].range);
         } else {
           document.getElementById('global-duration-input').value = "";
+          syncDateInputsFromDuration("");
           updateDeleteButtonVisibility(false);
         }
       } catch (err) {
@@ -2509,7 +2661,8 @@
       const globalDuration = document.getElementById('global-duration-input').value.trim();
       if (!globalDuration) {
         alert("⚠️ Please specify the Global Report Duration Range (e.g. 01-08-2026 to 15-08-2026) before uploading.");
-        document.getElementById('global-duration-input').focus();
+        const sInput = document.getElementById('start-date-input');
+        if (sInput) sInput.focus();
         return;
       }
 
@@ -2568,8 +2721,11 @@
     window.onSearchFocus = onSearchFocus;
     window.setMode = setMode;
     window.setRegion = setRegion;
-    window.toggleCalendarPopup = toggleCalendarPopup;
+    window.toggleCalPopup = toggleCalPopup;
+    window.closeAllCalPopups = closeAllCalPopups;
     window.changeCalMonth = changeCalMonth;
+    window.onSelectCalDate = onSelectCalDate;
+    window.onDateInputManualChange = onDateInputManualChange;
     window.setStatus = setStatus;
     window.addIssue = addIssue;
     window.resetIssueForm = resetIssueForm;
