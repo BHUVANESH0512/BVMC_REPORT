@@ -428,9 +428,10 @@ export function formatCompactMdm(vin, nick, grafanaUrl, mdmItems, val, issuesStr
  * Builds the complete Issue Summary table and category summary tables.
  * @param {object} vehicles 
  * @param {string} globalDuration 
+ * @param {object} [options={}] Optional report settings (region, timezone)
  * @returns {string}
  */
-export function getIssueSummarySection(vehicles, globalDuration) {
+export function getIssueSummarySection(vehicles, globalDuration, options = {}) {
   const tempAnomalyVins = [
     "MD9GBUE27DC341048",  // P1
     "MD9GBUE23DC341063",  // P6
@@ -578,6 +579,8 @@ export function getIssueSummarySection(vehicles, globalDuration) {
   const tableRowsHtml = rows.join("\n");
   const totalVehiclesCount = Object.keys(normVehicles).length;
 
+  const tzLabel = options.timezone || (options.region === 'India' ? 'IST' : 'PST (America/Los_Angeles)');
+
   return `
     ${buildCategoryTablesHtml(normVehicles)}
     <!-- ISSUE SUMMARY SECTION -->
@@ -589,7 +592,7 @@ export function getIssueSummarySection(vehicles, globalDuration) {
               <h2 style="margin: 0; font-size: 18px; font-weight: 600; color: #0f172a;"> Issue Summary</h2>
             </td>
             <td style="text-align: right; font-size: 12px; color: #64748b; font-weight: 500; vertical-align: middle;">
-              <strong>Report Duration:</strong> ${globalDuration} (PDT)
+              <strong>Report Duration:</strong> ${globalDuration} (${tzLabel})
             </td>
           </tr>
         </table>

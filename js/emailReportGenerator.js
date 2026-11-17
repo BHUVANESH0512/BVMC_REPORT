@@ -128,7 +128,7 @@ export function generateHtmlReportContent(vehicles, globalDuration, options = {}
 `;
   } else {
     // 1. Issue Summary and Category Summary tables
-    htmlOut += getIssueSummarySection(normVehicles, globalDuration);
+    htmlOut += getIssueSummarySection(normVehicles, globalDuration, options);
 
     // 2. Detailed Vehicle Diagnostics cards
     const hasIssueCards = Object.values(normVehicles).some(v => !['healthy', 'inactive'].includes(v.status || 'healthy'));
@@ -346,7 +346,7 @@ export function generateHtmlReportContent(vehicles, globalDuration, options = {}
     <tr>
       <td bgcolor="#f8fafc" style="padding: 24px; text-align: center; border-top: 1px solid #e2e8f0; color: #64748b; font-size: 12px;">
         <p style="margin: 0;">This email was generated automatically by Boson Vehicle Dashboard Capture Analysis.</p>
-        <p style="margin: 4px 0 0 0;">&copy; 2026 Boson Motor Co. All rights reserved.</p>
+        <p style="margin: 4px 0 0 0;">Timezone: <strong>${esc(options.timezone || (options.region === 'India' ? 'IST (UTC+5:30)' : 'PST (America/Los_Angeles)'))}</strong> &bull; &copy; 2026 Boson Motor Co. All rights reserved.</p>
       </td>
     </tr>
 

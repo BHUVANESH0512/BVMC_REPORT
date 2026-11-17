@@ -239,6 +239,42 @@
       color: #ffffff;
     }
 
+    /* Region toggle — India / US (same visual style as mode toggle) */
+    .region-toggle-group {
+      display: flex;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      overflow: hidden;
+    }
+
+    .region-toggle-btn {
+      flex: 1;
+      padding: 10px;
+      text-align: center;
+      font-size: 13px;
+      font-weight: 600;
+      background-color: #ffffff;
+      color: var(--text-muted);
+      cursor: pointer;
+      user-select: none;
+      border-right: 1px solid var(--border);
+      transition: background-color 0.15s ease, color 0.15s ease;
+    }
+
+    .region-toggle-btn:last-child {
+      border-right: none;
+    }
+
+    .region-toggle-btn.active-india {
+      background-color: #16a34a;
+      color: #ffffff;
+    }
+
+    .region-toggle-btn.active-us {
+      background-color: #2563eb;
+      color: #ffffff;
+    }
+
     .health-toggle-group {
       display: flex;
       border: 1px solid var(--border);
@@ -512,7 +548,7 @@
       <a href="/" target="_blank" style="color: #cbd5e1; text-decoration: none; font-size: 12px; font-weight: 500; display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.08); transition: all 0.15s ease;">
         <span>🌐</span> Customer Portal ↗
       </a>
-      <a href="/login.html" onclick="handleLogout(event)" style="color: #fca5a5; text-decoration: none; font-size: 12px; font-weight: 600; display: inline-flex; align-items: center; gap: 5px; padding: 6px 12px; border-radius: 6px; border: 1px solid rgba(239,68,68,0.4); background: rgba(239,68,68,0.15); transition: all 0.15s ease;">
+      <a href="/login.html?logout=1" onclick="handleLogout(event)" style="color: #fca5a5; text-decoration: none; font-size: 12px; font-weight: 600; display: inline-flex; align-items: center; gap: 5px; padding: 6px 12px; border-radius: 6px; border: 1px solid rgba(239,68,68,0.4); background: rgba(239,68,68,0.15); transition: all 0.15s ease;">
         <span>🚪</span> Logout
       </a>
     </div>
@@ -536,17 +572,87 @@
           </select>
         </div>
 
-        <div class="form-group" style="margin-bottom: 0;">
-          <label for="global-duration-input">Global Report Duration Range</label>
-          <input type="text" id="global-duration-input" placeholder="e.g. 01-08-2026 to 15-08-2026" oninput="onDurationInputChanged()" onchange="onDurationInputSaved()">
+        <div class="form-group" style="margin-bottom: 0; position: relative;">
+          <label style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <span>Global Report Duration Range</span>
+            <span id="duration-tz-badge" style="font-size: 11px; padding: 2px 8px; border-radius: 4px; font-weight: 600; background: #dcfce7; color: #16a34a; border: 1px solid #bbf7d0;">IST (UTC+5:30)</span>
+          </label>
+          <div style="position: relative;">
+            <input type="text" id="global-duration-input" placeholder="Click to select date range (e.g. 01-11-2026 to 15-11-2026)"
+                   readonly onclick="toggleCalendarPopup()"
+                   style="width: 100%; padding: 10px 40px 10px 12px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 13px; font-weight: 600; background: #ffffff; color: #0f172a; cursor: pointer; box-sizing: border-box;">
+            <span onclick="toggleCalendarPopup()" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); cursor: pointer; font-size: 16px; user-select: none;">📅</span>
+          </div>
+
+          <!-- Grafana-style Time Range Picker Dropdown (Matches Photo 1) -->
+          <div id="calendar-popup" style="display: none; position: absolute; top: calc(100% + 4px); left: 0; z-index: 1000; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.15); width: 560px; max-width: 95vw; padding: 16px; box-sizing: border-box;">
+            <!-- Header -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid #f1f5f9; padding-bottom: 8px;">
+              <span style="font-size: 13px; font-weight: 700; color: #0f172a;">Select a time range</span>
+              <span onclick="toggleCalendarPopup(false)" style="cursor: pointer; font-size: 18px; color: #94a3b8; font-weight: bold; line-height: 1; padding: 0 4px;">&times;</span>
+            </div>
+
+            <!-- Two Columns matching user Photo 1 -->
+            <div style="display: flex; gap: 16px; flex-wrap: wrap;">
+              <!-- Left: Month Calendar -->
+              <div style="flex: 1.1; min-width: 240px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                  <button type="button" onclick="changeCalMonth(-1)" style="border: 1px solid #e2e8f0; background: #f8fafc; border-radius: 4px; padding: 3px 8px; cursor: pointer; font-weight: bold; color: #475569;">&lt;</button>
+                  <span id="cal-month-label" style="font-size: 13px; font-weight: 700; color: #1e293b;"></span>
+                  <button type="button" onclick="changeCalMonth(1)" style="border: 1px solid #e2e8f0; background: #f8fafc; border-radius: 4px; padding: 3px 8px; cursor: pointer; font-weight: bold; color: #475569;">&gt;</button>
+                </div>
+                <div style="display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; font-size: 11px; font-weight: 600; color: #2563eb; margin-bottom: 4px;">
+                  <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
+                </div>
+                <div id="cal-grid" style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px;">
+                  <!-- Dynamic day buttons -->
+                </div>
+              </div>
+
+              <!-- Right: Absolute time range & Apply button -->
+              <div style="flex: 1; min-width: 200px; display: flex; flex-direction: column; justify-content: space-between; border-left: 1px solid #f1f5f9; padding-left: 16px;">
+                <div>
+                  <div style="font-size: 12px; font-weight: 700; color: #0f172a; margin-bottom: 10px;">Absolute time range</div>
+                  
+                  <div style="margin-bottom: 10px;">
+                    <label style="font-size: 11px; color: #64748b; font-weight: 600; display: block; margin-bottom: 2px;">From</label>
+                    <input type="date" id="cal-from-input" onchange="onManualCalDateChange()" style="width: 100%; padding: 6px 8px; border-radius: 4px; border: 1px solid #cbd5e1; font-size: 12px; font-family: monospace; box-sizing: border-box; background: #fff;">
+                  </div>
+
+                  <div style="margin-bottom: 14px;">
+                    <label style="font-size: 11px; color: #64748b; font-weight: 600; display: block; margin-bottom: 2px;">To</label>
+                    <input type="date" id="cal-to-input" onchange="onManualCalDateChange()" style="width: 100%; padding: 6px 8px; border-radius: 4px; border: 1px solid #cbd5e1; font-size: 12px; font-family: monospace; box-sizing: border-box; background: #fff;">
+                  </div>
+                </div>
+
+                <div>
+                  <button type="button" onclick="applyTimeRange()" class="btn-primary" style="width: 100%; padding: 9px 12px; font-size: 13px; font-weight: 600; background: #2563eb; color: #ffffff; border: none; border-radius: 6px; cursor: pointer; text-align: center;">
+                    Apply time range
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
       <!-- Vehicle Data Entry -->
       <div class="panel">
-        <div class="panel-title">
+        <div class="panel-title" style="display: flex; justify-content: space-between; align-items: center;">
           <span>Vehicle Data Entry</span>
           <button class="btn-secondary" onclick="clearForm()" style="padding: 4px 10px; font-size: 11px;">Reset Form</button>
+        </div>
+
+        <!-- Region selector: India vs US (at top of panel) -->
+        <div class="form-group" style="margin-bottom: 14px;">
+          <label style="display: flex; justify-content: space-between; align-items: center;">
+            <span>Vehicle Region / Fleet</span>
+            <span id="vehicle-tz-indicator" style="font-size: 11px; font-weight: 600; color: #16a34a; background: #dcfce7; padding: 2px 8px; border-radius: 4px; border: 1px solid #bbf7d0;">Timezone: IST (UTC+5:30)</span>
+          </label>
+          <div class="region-toggle-group">
+            <div id="region-india" class="region-toggle-btn active-india" onclick="setRegion('India')">🇮🇳 India (IST)</div>
+            <div id="region-us" class="region-toggle-btn" onclick="setRegion('US')">🇺🇸 US (PST)</div>
+          </div>
         </div>
 
         <div class="form-group search-container">
@@ -1230,7 +1336,7 @@
               <h2 style="margin: 0; font-size: 18px; font-weight: 600; color: #0f172a;"> Issue Summary</h2>
             </td>
             <td style="text-align: right; font-size: 12px; color: #64748b; font-weight: 500; vertical-align: middle;">
-              <strong>Report Duration:</strong> ${globalDuration} (PDT)
+              <strong>Report Duration:</strong> ${globalDuration} (${currentRegion === 'India' ? 'IST' : 'PST (America/Los_Angeles)'})
             </td>
           </tr>
         </table>
@@ -1332,8 +1438,219 @@
     let activeIssues = [];
     let currentMode = 'Autonomous';
     let currentStatus = 'healthy'; // 'healthy', 'unhealthy', 'inactive', 'mdm_issue'
+    let currentRegion = 'India'; // 'India' (IST) or 'US' (PST)
 
     let SAVED_REPORTS = [];
+
+    // GRAFANA-STYLE TIME RANGE PICKER CONTROLLER
+    let calViewDate = new Date();
+    let calFromDate = null; // Date object
+    let calToDate = null;   // Date object
+    const MONTH_NAMES = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+
+    function parseRangeToDates(rangeStr) {
+      if (!rangeStr) return { from: null, to: null };
+      const parts = rangeStr.split(/\s+to\s+/i);
+      function toDate(dStr) {
+        if (!dStr) return null;
+        const m = dStr.trim().match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})$/);
+        if (m) {
+          return new Date(parseInt(m[3], 10), parseInt(m[2], 10) - 1, parseInt(m[1], 10));
+        }
+        return null;
+      }
+      return { from: toDate(parts[0]), to: toDate(parts[1]) };
+    }
+
+    function formatDateDDMMYYYY(d) {
+      if (!d || isNaN(d.getTime())) return '';
+      const day = String(d.getDate()).padStart(2, '0');
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const year = d.getFullYear();
+      return `${day}-${month}-${year}`;
+    }
+
+    function formatDateYYYYMMDD(d) {
+      if (!d || isNaN(d.getTime())) return '';
+      const day = String(d.getDate()).padStart(2, '0');
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const year = d.getFullYear();
+      return `${year}-${month}-${day}`;
+    }
+
+    function toggleCalendarPopup(forceState) {
+      const popup = document.getElementById('calendar-popup');
+      if (!popup) return;
+      const shouldOpen = (typeof forceState === 'boolean') ? forceState : (popup.style.display !== 'block');
+      if (shouldOpen) {
+        const currentVal = document.getElementById('global-duration-input')?.value || '';
+        const parsed = parseRangeToDates(currentVal);
+        calFromDate = parsed.from;
+        calToDate = parsed.to;
+        if (calFromDate) {
+          calViewDate = new Date(calFromDate.getFullYear(), calFromDate.getMonth(), 1);
+        } else {
+          calViewDate = new Date();
+        }
+        syncCalInputsFromDates();
+        renderCalendarGrid();
+        popup.style.display = 'block';
+      } else {
+        popup.style.display = 'none';
+      }
+    }
+
+    function changeCalMonth(delta) {
+      calViewDate.setMonth(calViewDate.getMonth() + delta);
+      renderCalendarGrid();
+    }
+
+    function syncCalInputsFromDates() {
+      const fromInput = document.getElementById('cal-from-input');
+      const toInput = document.getElementById('cal-to-input');
+      if (fromInput) fromInput.value = calFromDate ? formatDateYYYYMMDD(calFromDate) : '';
+      if (toInput) toInput.value = calToDate ? formatDateYYYYMMDD(calToDate) : '';
+    }
+
+    function onManualCalDateChange() {
+      const fromVal = document.getElementById('cal-from-input')?.value;
+      const toVal = document.getElementById('cal-to-input')?.value;
+      if (fromVal) {
+        const p = fromVal.split('-');
+        calFromDate = new Date(parseInt(p[0], 10), parseInt(p[1], 10) - 1, parseInt(p[2], 10));
+      } else {
+        calFromDate = null;
+      }
+      if (toVal) {
+        const p = toVal.split('-');
+        calToDate = new Date(parseInt(p[0], 10), parseInt(p[1], 10) - 1, parseInt(p[2], 10));
+      } else {
+        calToDate = null;
+      }
+      renderCalendarGrid();
+    }
+
+    function onCalDayClick(year, month, day) {
+      const clicked = new Date(year, month, day);
+      if (!calFromDate || (calFromDate && calToDate)) {
+        calFromDate = clicked;
+        calToDate = null;
+      } else if (calFromDate && !calToDate) {
+        if (clicked < calFromDate) {
+          calToDate = calFromDate;
+          calFromDate = clicked;
+        } else {
+          calToDate = clicked;
+        }
+      }
+      syncCalInputsFromDates();
+      renderCalendarGrid();
+    }
+
+    function renderCalendarGrid() {
+      const label = document.getElementById('cal-month-label');
+      const grid = document.getElementById('cal-grid');
+      if (!label || !grid) return;
+
+      const year = calViewDate.getFullYear();
+      const month = calViewDate.getMonth();
+      label.textContent = `${MONTH_NAMES[month]} ${year}`;
+
+      grid.innerHTML = '';
+
+      // First day of month (Monday=0, Sunday=6)
+      const firstDay = new Date(year, month, 1);
+      let startDayIndex = firstDay.getDay() - 1; // 0 for Mon, -1 for Sun
+      if (startDayIndex === -1) startDayIndex = 6;
+
+      const daysInPrevMonth = new Date(year, month, 0).getDate();
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+      // Previous month padding days
+      for (let i = startDayIndex - 1; i >= 0; i--) {
+        const d = daysInPrevMonth - i;
+        const cell = document.createElement('div');
+        cell.textContent = d;
+        cell.style.padding = '6px 2px';
+        cell.style.textAlign = 'center';
+        cell.style.fontSize = '12px';
+        cell.style.color = '#cbd5e1';
+        cell.style.userSelect = 'none';
+        grid.appendChild(cell);
+      }
+
+      // Current month days
+      for (let day = 1; day <= daysInMonth; day++) {
+        const thisDate = new Date(year, month, day);
+        const cell = document.createElement('button');
+        cell.type = 'button';
+        cell.textContent = day;
+        cell.style.padding = '6px 2px';
+        cell.style.textAlign = 'center';
+        cell.style.fontSize = '12px';
+        cell.style.fontWeight = '500';
+        cell.style.border = 'none';
+        cell.style.cursor = 'pointer';
+        cell.style.userSelect = 'none';
+        cell.style.background = 'transparent';
+        cell.style.color = '#1e293b';
+
+        // Check if in range
+        let isStart = calFromDate && (thisDate.toDateString() === calFromDate.toDateString());
+        let isEnd = calToDate && (thisDate.toDateString() === calToDate.toDateString());
+        let isInRange = calFromDate && calToDate && (thisDate > calFromDate && thisDate < calToDate);
+
+        if (isStart || isEnd) {
+          cell.style.background = '#2563eb';
+          cell.style.color = '#ffffff';
+          cell.style.fontWeight = '700';
+          cell.style.borderRadius = isStart && !calToDate ? '6px' : (isStart ? '6px 0 0 6px' : '0 6px 6px 0');
+        } else if (isInRange) {
+          cell.style.background = '#3b82f6';
+          cell.style.color = '#ffffff';
+          cell.style.borderRadius = '0';
+        } else {
+          cell.style.borderRadius = '4px';
+          cell.onmouseenter = () => { if (!cell.style.background || cell.style.background === 'transparent') cell.style.background = '#f1f5f9'; };
+          cell.onmouseleave = () => { if (cell.style.background === 'rgb(241, 245, 249)' || cell.style.background === '#f1f5f9') cell.style.background = 'transparent'; };
+        }
+
+        cell.onclick = () => onCalDayClick(year, month, day);
+        grid.appendChild(cell);
+      }
+    }
+
+    function applyTimeRange() {
+      if (!calFromDate && !calToDate) {
+        toggleCalendarPopup(false);
+        return;
+      }
+      let finalFrom = calFromDate || calToDate;
+      let finalTo = calToDate || calFromDate;
+      if (finalFrom > finalTo) {
+        const tmp = finalFrom; finalFrom = finalTo; finalTo = tmp;
+      }
+
+      const str = `${formatDateDDMMYYYY(finalFrom)} to ${formatDateDDMMYYYY(finalTo)}`;
+      const durationInput = document.getElementById('global-duration-input');
+      if (durationInput) {
+        durationInput.value = str;
+      }
+      toggleCalendarPopup(false);
+      onDurationInputChanged();
+      onDurationInputSaved();
+    }
+
+    // Close calendar popup when clicking outside
+    document.addEventListener('click', function(e) {
+      const popup = document.getElementById('calendar-popup');
+      const input = document.getElementById('global-duration-input');
+      if (popup && popup.style.display === 'block') {
+        if (!popup.contains(e.target) && e.target !== input && !e.target.closest('#calendar-popup')) {
+          popup.style.display = 'none';
+        }
+      }
+    });
 
     // POPULATE PREDEFINED SEARCH LIST & INITIALIZE DASHBOARD
     async function initOwnerDashboard() {
@@ -1441,7 +1758,8 @@
       const report = SAVED_REPORTS.find(r => r.range === rangeVal || r.id === rangeVal);
       if (!report) return;
 
-      document.getElementById('global-duration-input').value = report.range || rangeVal;
+      const newRange = report.range || rangeVal;
+      document.getElementById('global-duration-input').value = newRange;
       
       if (report.vehicles && Object.keys(report.vehicles).length > 0) {
         activeFleet = JSON.parse(JSON.stringify(report.vehicles));
@@ -1599,6 +1917,13 @@
       document.getElementById('nickname-input').value = nickname || data.nickname || '';
       document.getElementById('location-input').value = data.location || 'Not Available';
       setMode(data.mode || 'Autonomous');
+
+      // Auto-detect region
+      if (data.location && (data.location.includes('IST') || data.location.includes('India'))) {
+        setRegion('India');
+      } else if (data.location && (data.location.includes('PST') || data.location.includes('United States') || data.location.includes('Glenn, CA') || data.location.includes('CA'))) {
+        setRegion('US');
+      }
     }
 
     // Hide dropdown when clicking outside
@@ -1610,6 +1935,54 @@
     });
 
     // STATE SWITCHERS
+    function setRegion(region) {
+      currentRegion = region;
+      const indiaBtn = document.getElementById('region-india');
+      const usBtn = document.getElementById('region-us');
+      const tzBadge = document.getElementById('duration-tz-badge');
+      const vehTzBadge = document.getElementById('vehicle-tz-indicator');
+      const locInput = document.getElementById('location-input');
+
+      if (region === 'India') {
+        if (indiaBtn) indiaBtn.className = 'region-toggle-btn active-india';
+        if (usBtn) usBtn.className = 'region-toggle-btn';
+        if (tzBadge) {
+          tzBadge.textContent = 'IST (UTC+5:30)';
+          tzBadge.style.background = '#dcfce7';
+          tzBadge.style.color = '#16a34a';
+          tzBadge.style.borderColor = '#bbf7d0';
+        }
+        if (vehTzBadge) {
+          vehTzBadge.textContent = 'Timezone: IST (UTC+5:30)';
+          vehTzBadge.style.background = '#dcfce7';
+          vehTzBadge.style.color = '#16a34a';
+          vehTzBadge.style.borderColor = '#bbf7d0';
+        }
+        if (locInput && (!locInput.value || locInput.value === 'PST' || locInput.value === 'Not Available' || locInput.value === 'US')) {
+          locInput.value = 'India';
+        }
+      } else {
+        if (indiaBtn) indiaBtn.className = 'region-toggle-btn';
+        if (usBtn) usBtn.className = 'region-toggle-btn active-us';
+        if (tzBadge) {
+          tzBadge.textContent = 'PST (America/Los_Angeles)';
+          tzBadge.style.background = '#dbeafe';
+          tzBadge.style.color = '#2563eb';
+          tzBadge.style.borderColor = '#bfdbfe';
+        }
+        if (vehTzBadge) {
+          vehTzBadge.textContent = 'Timezone: PST (America/Los_Angeles)';
+          vehTzBadge.style.background = '#dbeafe';
+          vehTzBadge.style.color = '#2563eb';
+          vehTzBadge.style.borderColor = '#bfdbfe';
+        }
+        if (locInput && (!locInput.value || locInput.value === 'India' || locInput.value === 'IST' || locInput.value === 'Not Available')) {
+          locInput.value = 'PST';
+        }
+      }
+      updateReportPreview();
+    }
+
     function setMode(mode) {
       currentMode = mode;
       if (mode === 'Autonomous') {
@@ -1854,6 +2227,7 @@
       document.getElementById('vt-box-time-input').value = '';
       document.getElementById('grafana-url-input').value = '';
       setMode('Autonomous');
+      setRegion(currentRegion);
       setStatus('healthy');
       activeIssues = [];
       resetIssueForm();
@@ -1943,6 +2317,7 @@
         vin: vin,
         nickname: nickname,
         location: location,
+        region: currentRegion,
         mode: currentMode,
         status: currentStatus,
         issues: hasIssueLog ? activeIssues.map(i => i.issue) : [],
@@ -1972,6 +2347,13 @@
       document.getElementById('grafana-url-input').value = vehicle.grafana_url || '';
       
       setMode(vehicle.mode);
+      if (vehicle.region) {
+        setRegion(vehicle.region);
+      } else if (vehicle.location && (vehicle.location.includes('IST') || vehicle.location.includes('India'))) {
+        setRegion('India');
+      } else {
+        setRegion('US');
+      }
       setStatus(vehicle.status || 'healthy');
       
       // Populate version details
@@ -2235,6 +2617,11 @@
     window.clearForm = clearForm;
     window.onSearchFocus = onSearchFocus;
     window.setMode = setMode;
+    window.setRegion = setRegion;
+    window.toggleCalendarPopup = toggleCalendarPopup;
+    window.changeCalMonth = changeCalMonth;
+    window.onManualCalDateChange = onManualCalDateChange;
+    window.applyTimeRange = applyTimeRange;
     window.setStatus = setStatus;
     window.addIssue = addIssue;
     window.resetIssueForm = resetIssueForm;
@@ -2257,7 +2644,9 @@
     window.filterPredefined = filterPredefined;
     window.updateReportPreview = updateReportPreview;
     window.handleLogout = async function(event) {
-      if (event) event.preventDefault();
+      if (event) {
+        try { event.preventDefault(); } catch (e) {}
+      }
       try {
         if (isSupabaseConfigured()) {
           await supabase.auth.signOut();
@@ -2265,8 +2654,9 @@
       } catch (e) {
         console.warn("Sign out note:", e);
       }
-      localStorage.removeItem('bvmc_owner_session');
-      window.location.href = '/login.html';
+      try { localStorage.removeItem('bvmc_owner_session'); } catch (e) {}
+      try { sessionStorage.removeItem('bvmc_owner_session'); } catch (e) {}
+      window.location.replace('/login.html?logout=1');
     };
   </script>
 

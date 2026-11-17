@@ -221,6 +221,12 @@
     // ── Auto-redirect if a valid session already exists ──────────────────────
     (function() {
       try {
+        var params = new URLSearchParams(window.location.search);
+        if (params.get('logout') === '1') {
+          try { localStorage.removeItem('bvmc_owner_session'); } catch (e) {}
+          try { sessionStorage.removeItem('bvmc_owner_session'); } catch (e) {}
+          return;
+        }
         var s = localStorage.getItem('bvmc_owner_session') || sessionStorage.getItem('bvmc_owner_session');
         if (s) {
           var parsed = JSON.parse(s);
