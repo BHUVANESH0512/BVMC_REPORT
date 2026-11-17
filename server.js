@@ -12,6 +12,25 @@ import { fileURLToPath } from 'node:url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// Automatically load .env if present
+const envPath = path.join(__dirname, '.env');
+if (fs.existsSync(envPath)) {
+  const envContent = fs.readFileSync(envPath, 'utf8');
+  for (const line of envContent.split(/\r?\n/)) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('#')) continue;
+    const match = trimmed.match(/^([\w.-]+)\s*=\s*(.*)?$/);
+    if (match) {
+      const key = match[1];
+      let value = (match[2] || '').trim();
+      if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
+        value = value.slice(1, -1);
+      }
+      process.env[key] = value;
+    }
+  }
+}
+
 const PORT = process.env.PORT || 3000;
 
 const MIME_TYPES = {
@@ -32,6 +51,18 @@ const server = http.createServer((req, res) => {
   // Normalize URL
   const parsedUrl = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
   let pathname = decodeURIComponent(parsedUrl.pathname);
+
+  // Serve dynamic /env.js for seamless local development
+  if (pathname === '/env.js') {
+    res.writeHead(200, {
+      'Content-Type': 'application/javascript; charset=utf-8',
+      'Cache-Control': 'no-cache'
+    });
+    const supabaseUrl = process.env.VITE_SUPABASE_URL || '';
+    const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || '';
+    res.end(`window.VITE_SUPABASE_URL = ${JSON.stringify(supabaseUrl)};\nwindow.VITE_SUPABASE_ANON_KEY = ${JSON.stringify(supabaseKey)};\n`);
+    return;
+  }
 
   // Friendly rewrites matching Vercel routing
   if (pathname === '/' || pathname === '/customer' || pathname === '/customer/') {
@@ -71,8 +102,18 @@ const server = http.createServer((req, res) => {
 });
 
 server.listen(PORT, () => {
-  console.log(`\n🚀 BVMC Report Server running at http://localhost:${PORT}`);
-  console.log(`   - Customer Portal: http://localhost:${PORT}/fleet-mission-reports/`);
-  console.log(`   - Owner Dashboard: http://localhost:${PORT}/vehicle_mission_report-4.html`);
-  console.log(`   - Login:           http://localhost:${PORT}/login.html\n`);
+  console.log(`\n======================================================`);
+  console.log(`🚀 BVMC Report Server running at http://localhost:${PORT}`);
+  console.log(`======================================================`);
+  console.log(`  🌐 Customer Portal: http://localhost:${PORT}/fleet-mission-reports/`);
+  console.log(`  🛠️ Owner Dashboard: http://localhost:${PORT}/vehicle_mission_report-4.html`);
+  console.log(`  🔐 Login Page:     http://localhost:${PORT}/login.html`);
+  console.log(`------------------------------------------------------`);
+  if (process.env.VITE_SUPABASE_URL && process.env.VITE_SUPABASE_URL !== 'https://your-project-ref.supabase.co') {
+    console.log(`  ✓ Supabase Connected: ${process.env.VITE_SUPABASE_URL}`);
+  } else {
+    console.log(`  ⚠️ Supabase Not Connected: Using embedded local data.`);
+    console.log(`     (Add VITE_SUPABASE_URL to .env to connect live Supabase)`);
+  }
+  console.log(`======================================================\n`);
 });
