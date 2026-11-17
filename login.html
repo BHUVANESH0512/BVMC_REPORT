@@ -14,25 +14,22 @@
       --text-main: #0f172a;
       --text-muted: #64748b;
       --accent: #2563eb;
-      --accent-hover: #1d4ed8;
-      --radius: 8px;
+      --danger: #dc2626;
     }
 
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
+    * { box-sizing: border-box; }
 
     body {
+      margin: 0;
+      padding: 0;
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       background-color: var(--bg);
       color: var(--text-main);
-      min-height: 100vh;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
+      min-height: 100vh;
       padding: 20px;
     }
 
@@ -40,103 +37,110 @@
       width: 100%;
       max-width: 420px;
       background: #ffffff;
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
+      border-radius: 12px;
       box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      border: 1px solid var(--border);
       overflow: hidden;
     }
 
     .login-header {
       background-color: var(--navy);
-      color: #ffffff;
-      padding: 28px 24px;
+      padding: 32px 24px 24px 24px;
       text-align: center;
-      border-bottom: 4px solid var(--accent);
+      color: #ffffff;
+    }
+
+    .login-header img {
+      max-height: 48px;
+      width: auto;
+      margin-bottom: 12px;
     }
 
     .login-header h1 {
-      font-size: 22px;
+      margin: 0;
+      font-size: 20px;
       font-weight: 700;
-      letter-spacing: -0.5px;
-      margin-bottom: 4px;
+      letter-spacing: -0.3px;
     }
 
     .login-header p {
-      font-size: 13px;
+      margin: 6px 0 0 0;
       color: #94a3b8;
+      font-size: 13px;
     }
 
     .login-body {
-      padding: 28px 24px 24px 24px;
+      padding: 32px 28px;
     }
 
     .form-group {
-      margin-bottom: 18px;
+      margin-bottom: 20px;
     }
 
-    label {
+    .form-group label {
       display: block;
-      font-size: 12px;
+      font-size: 13px;
       font-weight: 600;
-      color: var(--text-muted);
+      color: var(--text-main);
       margin-bottom: 6px;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
     }
 
-    input[type="text"],
-    input[type="password"] {
+    .form-group input {
       width: 100%;
-      padding: 11px 14px;
+      padding: 10px 14px;
+      font-size: 14px;
       border: 1px solid var(--border);
       border-radius: 6px;
-      font-size: 14px;
-      font-family: inherit;
-      color: var(--text-main);
-      background-color: #ffffff;
-      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+      outline: none;
+      transition: all 0.15s ease;
+      background-color: #f8fafc;
     }
 
-    input[type="text"]:focus,
-    input[type="password"]:focus {
-      outline: none;
+    .form-group input:focus {
       border-color: var(--accent);
-      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+      background-color: #ffffff;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
     }
 
     .error-banner {
+      display: none;
       background-color: #fee2e2;
       border: 1px solid #fecaca;
-      color: #dc2626;
+      color: var(--danger);
+      font-size: 13px;
+      font-weight: 500;
       padding: 10px 14px;
       border-radius: 6px;
-      font-size: 13px;
-      margin-bottom: 18px;
-      display: none;
+      margin-bottom: 20px;
+      display: flex;
       align-items: center;
       gap: 8px;
     }
 
     .btn-login {
       width: 100%;
+      padding: 12px;
       background-color: var(--accent);
       color: #ffffff;
       border: none;
-      padding: 12px;
+      border-radius: 6px;
       font-size: 14px;
       font-weight: 600;
-      border-radius: 6px;
       cursor: pointer;
-      font-family: inherit;
-      transition: background-color 0.15s ease, transform 0.05s ease;
       display: flex;
       align-items: center;
       justify-content: center;
       gap: 8px;
+      transition: background-color 0.15s ease;
     }
 
     .btn-login:hover {
-      background-color: var(--accent-hover);
+      background-color: #1d4ed8;
+    }
+
+    .btn-login:disabled {
+      background-color: #94a3b8;
+      cursor: not-allowed;
     }
 
     .btn-login:active {
@@ -172,12 +176,12 @@
     </div>
 
     <div class="login-body">
-      <div id="error-box" class="error-banner">
+      <div id="error-box" class="error-banner" style="display: none;">
         <span>⚠️</span>
         <span id="error-message">Invalid username or password.</span>
       </div>
 
-      <form id="login-form" onsubmit="handleLogin(event)">
+      <form id="login-form" action="javascript:void(0);" onsubmit="return false;" autocomplete="on">
         <div class="form-group">
           <label for="username">Username</label>
           <input type="text" id="username" name="username" placeholder="Enter owner username" required autofocus autocomplete="username">
@@ -189,7 +193,7 @@
         </div>
 
         <button type="submit" id="submit-btn" class="btn-login">
-          <span>Sign In to Owner Portal</span>
+          <span id="btn-text">Sign In to Owner Portal</span>
           <span id="login-arrow">&rarr;</span>
         </button>
       </form>
@@ -202,70 +206,92 @@
     </a>
   </div>
 
-  <script type="module">
-    import { supabase, isSupabaseConfigured } from './js/supabaseClient.js';
+  <script>
+    (function() {
+      // Determine target redirect URL
+      const urlParams = new URLSearchParams(window.location.search);
+      const rawNext = urlParams.get('next') || '/vehicle_mission_report-4.html';
+      const nextUrl = (rawNext === '/owner' || rawNext === '/admin') ? '/vehicle_mission_report-4.html' : rawNext;
 
-    window.handleLogin = async function(event) {
-      event.preventDefault();
-      const username = document.getElementById('username').value.trim();
-      const password = document.getElementById('password').value;
+      // Auto-redirect if already authenticated
+      try {
+        const existingSession = localStorage.getItem('bvmc_owner_session');
+        if (existingSession) {
+          const parsed = JSON.parse(existingSession);
+          if (parsed && (parsed.username || parsed.user)) {
+            window.location.replace(nextUrl);
+            return;
+          }
+        }
+      } catch (e) {
+        // Ignore session parse error
+      }
+
+      const form = document.getElementById('login-form');
+      const usernameInput = document.getElementById('username');
+      const passwordInput = document.getElementById('password');
       const errorBox = document.getElementById('error-box');
       const errorMsg = document.getElementById('error-message');
       const submitBtn = document.getElementById('submit-btn');
+      const btnText = document.getElementById('btn-text');
 
-      errorBox.style.display = 'none';
-      submitBtn.disabled = true;
-      submitBtn.innerHTML = 'Authenticating...';
+      form.addEventListener('submit', async function(event) {
+        event.preventDefault();
+        event.stopPropagation();
 
-      const urlParams = new URLSearchParams(window.location.search);
-      const nextUrl = urlParams.get('next') || '/vehicle_mission_report-4.html';
+        const username = usernameInput.value.trim();
+        const password = passwordInput.value;
 
-      try {
-        let authSuccess = false;
+        errorBox.style.display = 'none';
+        submitBtn.disabled = true;
+        btnText.textContent = 'Authenticating...';
 
-        // 1. Try Supabase Auth if configured
-        if (isSupabaseConfigured()) {
-          const email = username.includes('@') ? username : `${username}@bosonmotors.com`;
-          const { data, error } = await supabase.auth.signInWithPassword({
-            email: email,
-            password: password
-          });
-
-          if (!error && data?.session) {
-            authSuccess = true;
+        // 1. Direct validation for built-in credentials (instant & offline safe)
+        if ((username === 'admin' || username === 'owner') && password === 'boson2026') {
+          try {
             localStorage.setItem('bvmc_owner_session', JSON.stringify({
-              user: data.user,
-              timestamp: Date.now()
+              username: username,
+              role: 'owner',
+              authenticated_at: new Date().toISOString()
             }));
+          } catch (storageErr) {
+            console.warn('LocalStorage error:', storageErr);
           }
+          window.location.replace(nextUrl);
+          return;
         }
 
-        // 2. Default credentials fallback (admin / boson2026)
-        if (!authSuccess && username === 'admin' && password === 'boson2026') {
-          authSuccess = true;
-          localStorage.setItem('bvmc_owner_session', JSON.stringify({
-            username: 'admin',
-            role: 'owner',
-            timestamp: Date.now()
-          }));
+        // 2. Fallback to Supabase Auth if credentials differ from default
+        try {
+          const supaModule = await import('./js/supabaseClient.js');
+          if (supaModule && supaModule.isSupabaseConfigured()) {
+            const email = username.includes('@') ? username : `${username}@bosonmotors.com`;
+            const { data, error } = await supaModule.supabase.auth.signInWithPassword({
+              email: email,
+              password: password
+            });
+
+            if (!error && data?.session) {
+              localStorage.setItem('bvmc_owner_session', JSON.stringify({
+                user: data.user.email,
+                token: data.session.access_token,
+                authenticated_at: new Date().toISOString()
+              }));
+              window.location.replace(nextUrl);
+              return;
+            }
+          }
+        } catch (supaErr) {
+          console.warn('Supabase Auth error:', supaErr);
         }
 
-        if (authSuccess) {
-          window.location.href = nextUrl;
-        } else {
-          errorMsg.textContent = 'Invalid username or password.';
-          errorBox.style.display = 'flex';
-          submitBtn.disabled = false;
-          submitBtn.innerHTML = '<span>Sign In to Owner Portal</span> &rarr;';
-        }
-      } catch (err) {
-        console.error('Login error:', err);
-        errorMsg.textContent = 'Authentication error. Please try again.';
+        // 3. If neither matched, display error without reloading
+        errorMsg.textContent = 'Invalid username or password.';
         errorBox.style.display = 'flex';
         submitBtn.disabled = false;
-        submitBtn.innerHTML = '<span>Sign In to Owner Portal</span> &rarr;';
-      }
-    };
+        btnText.textContent = 'Sign In to Owner Portal';
+      });
+    })();
   </script>
 
 </body>
