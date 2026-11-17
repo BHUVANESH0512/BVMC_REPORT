@@ -6,8 +6,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Boson Motor - Customer Vehicles Mission Report Builder</title>
   <script src="/env.js" onerror="this.remove()"></script>
-  <link rel="stylesheet" href="./daterangepicker.css">
-  <script src="./daterangepicker.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <style>
     :root {
@@ -611,105 +609,15 @@
         </div>
 
         <div class="form-group" style="margin-bottom: 0;">
-          <label style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-            <label for="dates"
-              style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-              <span>Global Report Duration Range</span>
-              <span id="duration-tz-badge"
-                style="font-size: 11px; padding: 2px 8px; border-radius: 4px; font-weight: 600; background: #dcfce7; color: #16a34a; border: 1px solid #bbf7d0;">IST
-                (UTC+5:30)</span>
-            </label>
-
-            <div style="display: flex; gap: 10px; align-items: center;">
-              <!-- START DATE PICKER -->
-              <div style="flex: 1; position: relative;">
-                <span
-                  style="font-size: 11px; color: #64748b; font-weight: 600; display: block; margin-bottom: 3px;">START
-                  DATE</span>
-                <div style="position: relative;">
-                  <input type="text" id="start-date-input" placeholder="DD-MM-YYYY" oninput="onDateInputManualChange()"
-                    onclick="toggleCalPopup('start')"
-                    style="width: 100%; padding: 9px 34px 9px 10px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 13px; font-weight: 600; background: #ffffff; color: #0f172a; cursor: pointer; box-sizing: border-box;">
-                  <span onclick="toggleCalPopup('start')"
-                    style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); cursor: pointer; font-size: 15px; user-select: none;">📅</span>
-                </div>
-
-                <!-- Start Date Calendar Dropdown -->
-                <div id="start-cal-popup"
-                  style="display: none; position: absolute; top: calc(100% + 4px); left: 0; z-index: 1000; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.15); width: 280px; padding: 12px; box-sizing: border-box;">
-                  <div
-                    style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; border-bottom: 1px solid #f1f5f9; padding-bottom: 6px;">
-                    <span style="font-size: 12px; font-weight: 700; color: #0f172a;">Select Start Date</span>
-                    <span onclick="closeAllCalPopups()"
-                      style="cursor: pointer; font-size: 16px; color: #94a3b8; font-weight: bold; line-height: 1; padding: 0 4px;">&times;</span>
-                  </div>
-                  <div>
-                    <div
-                      style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                      <button type="button" onclick="changeCalMonth('start', -1)"
-                        style="border: 1px solid #e2e8f0; background: #f8fafc; border-radius: 4px; padding: 2px 7px; cursor: pointer; font-weight: bold; color: #475569;">&lt;</button>
-                      <span id="start-cal-month-label"
-                        style="font-size: 12px; font-weight: 700; color: #1e293b;"></span>
-                      <button type="button" onclick="changeCalMonth('start', 1)"
-                        style="border: 1px solid #e2e8f0; background: #f8fafc; border-radius: 4px; padding: 2px 7px; cursor: pointer; font-weight: bold; color: #475569;">&gt;</button>
-                    </div>
-                    <div
-                      style="display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; font-size: 11px; font-weight: 600; color: #2563eb; margin-bottom: 4px;">
-                      <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
-                    </div>
-                    <div id="start-cal-grid" style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px;">
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div style="color: #64748b; font-weight: 700; font-size: 13px; margin-top: 18px;">to</div>
-
-              <!-- END DATE PICKER -->
-              <div style="flex: 1; position: relative;">
-                <span style="font-size: 11px; color: #64748b; font-weight: 600; display: block; margin-bottom: 3px;">END
-                  DATE</span>
-                <div style="position: relative;">
-                  <input type="text" id="end-date-input" placeholder="DD-MM-YYYY" oninput="onDateInputManualChange()"
-                    onclick="toggleCalPopup('end')"
-                    style="width: 100%; padding: 9px 34px 9px 10px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 13px; font-weight: 600; background: #ffffff; color: #0f172a; cursor: pointer; box-sizing: border-box;">
-                  <span onclick="toggleCalPopup('end')"
-                    style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); cursor: pointer; font-size: 15px; user-select: none;">📅</span>
-                </div>
-
-                <!-- End Date Calendar Dropdown -->
-                <div id="end-cal-popup"
-                  style="display: none; position: absolute; top: calc(100% + 4px); right: 0; z-index: 1000; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.15); width: 280px; padding: 12px; box-sizing: border-box;">
-                  <div
-                    style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; border-bottom: 1px solid #f1f5f9; padding-bottom: 6px;">
-                    <span style="font-size: 12px; font-weight: 700; color: #0f172a;">Select End Date</span>
-                    <span onclick="closeAllCalPopups()"
-                      style="cursor: pointer; font-size: 16px; color: #94a3b8; font-weight: bold; line-height: 1; padding: 0 4px;">&times;</span>
-                  </div>
-                  <div>
-                    <div
-                      style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                      <button type="button" onclick="changeCalMonth('end', -1)"
-                        style="border: 1px solid #e2e8f0; background: #f8fafc; border-radius: 4px; padding: 2px 7px; cursor: pointer; font-weight: bold; color: #475569;">&lt;</button>
-                      <span id="end-cal-month-label" style="font-size: 12px; font-weight: 700; color: #1e293b;"></span>
-                      <button type="button" onclick="changeCalMonth('end', 1)"
-                        style="border: 1px solid #e2e8f0; background: #f8fafc; border-radius: 4px; padding: 2px 7px; cursor: pointer; font-weight: bold; color: #475569;">&gt;</button>
-                    </div>
-                    <div
-                      style="display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; font-size: 11px; font-weight: 600; color: #2563eb; margin-bottom: 4px;">
-                      <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
-                    </div>
-                    <div id="end-cal-grid" style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px;">
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <input type="text" id="dates" placeholder="Click to select date range (e.g. 01-11-2026 to 15-11-2026)"
-              autocomplete="off">
-            <!-- Hidden input that preserves global-duration-input for all reports and sync -->
-            <input type="hidden" id="global-duration-input" value="">
+          <label for="global-duration-input" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <span>Global Report Duration Range</span>
+            <span id="duration-tz-badge"
+              style="font-size: 11px; padding: 2px 8px; border-radius: 4px; font-weight: 600; background: #dcfce7; color: #16a34a; border: 1px solid #bbf7d0;">IST
+              (UTC+5:30)</span>
+          </label>
+          <input type="text" id="global-duration-input" placeholder="e.g. 11-12-2026 to 19-12-2026"
+            oninput="onDurationInputChanged(); onDurationInputSaved();"
+            style="width: 100%; padding: 10px 12px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 13px; font-weight: 600; background: #ffffff; color: #0f172a; box-sizing: border-box;">
         </div>
       </div>
 
@@ -1581,84 +1489,58 @@
       return `${year}-${month}-${day}`;
     }
 
-    // DATERANGEPICKER INTEGRATION
-    let dateRangePickerInstance = null;
-
-    function initDateRangePicker() {
-      if (typeof DateRangePicker !== 'undefined') {
-        dateRangePickerInstance = new DateRangePicker('#dates', {
-          onChange: function (rangeStr) {
-            const hidden = document.getElementById('global-duration-input');
-            if (hidden) hidden.value = rangeStr || '';
-            onDurationInputChanged();
-            onDurationInputSaved();
-          }
-        });
-        window.datePicker = dateRangePickerInstance;
-      }
-    }
-
     function syncDateInputsFromDuration(rangeStr) {
-      const datesInput = document.getElementById('dates');
-      const hidden = document.getElementById('global-duration-input');
-      if (hidden) hidden.value = rangeStr || '';
-      if (dateRangePickerInstance) {
-        dateRangePickerInstance.setRange(rangeStr || '', false);
-      } else if (datesInput) {
-        datesInput.value = rangeStr || '';
-      }
+      const input = document.getElementById('global-duration-input');
+      if (input) input.value = rangeStr || '';
     }
 
     // POPULATE PREDEFINED SEARCH LIST & INITIALIZE DASHBOARD
-            async function initOwnerDashboard() {
-              initDateRangePicker();
-              populateSearchDropdown();
+    async function initOwnerDashboard() {
+      populateSearchDropdown();
 
-              // Initialize dynamic version fields
-              const vContainer = document.getElementById('versions-container');
-              if (vContainer && vContainer.children.length === 0) {
-                addVersionRow('VT_BOX Version', '');
-                addVersionRow('VCU Firmware Version', '');
-              }
+      // Initialize dynamic version fields
+      const vContainer = document.getElementById('versions-container');
+      if (vContainer && vContainer.children.length === 0) {
+        addVersionRow('VT_BOX Version', '');
+        addVersionRow('VCU Firmware Version', '');
+      }
 
-              // Check authentication session (localStorage OR sessionStorage)
-              const sessionStr = localStorage.getItem('bvmc_owner_session') || sessionStorage.getItem('bvmc_owner_session');
-              if (!sessionStr && typeof window !== 'undefined') {
-                const urlParams = new URLSearchParams(window.location.search);
-                if (!urlParams.has('demo')) {
-                  window.location.href = '/login.html?next=' + encodeURIComponent(window.location.pathname);
-                  return;
-                }
-              }
+      // Check authentication session (localStorage OR sessionStorage)
+      const sessionStr = localStorage.getItem('bvmc_owner_session') || sessionStorage.getItem('bvmc_owner_session');
+      if (!sessionStr && typeof window !== 'undefined') {
+        const urlParams = new URLSearchParams(window.location.search);
+        if (!urlParams.has('demo')) {
+          window.location.href = '/login.html?next=' + encodeURIComponent(window.location.pathname);
+          return;
+        }
+      }
 
-              // 1. Fetch latest state from Supabase / local storage
-              try {
-                const state = await getFleetState();
-                if (state && state.vehicles && Object.keys(state.vehicles).length > 0) {
-                  activeFleet = state.vehicles;
-                  if (state.global_duration) {
-                    document.getElementById('global-duration-input').value = state.global_duration;
-                    syncDateInputsFromDuration(state.global_duration);
-                  }
-                  updateFleetListUI();
-                } else {
-                  // Fallback to embedded state
-                  const scriptTag = document.getElementById('vehicles-json-state');
-                  if (scriptTag && scriptTag.textContent.trim()) {
-                    const parsed = JSON.parse(scriptTag.textContent.trim());
-                    if (parsed && parsed.vehicles && Object.keys(parsed.vehicles).length > 0) {
-                      activeFleet = parsed.vehicles;
-                      if (parsed.global_duration) {
-                        document.getElementById('global-duration-input').value = parsed.global_duration;
-                        syncDateInputsFromDuration(parsed.global_duration);
-                      }
-                      updateFleetListUI();
-                    }
-                  }
-                }
-              } catch (err) {
-                console.warn("Fleet state sync error:", err);
+      // 1. Fetch latest state from Supabase / local storage
+      try {
+        const state = await getFleetState();
+        if (state && state.vehicles && Object.keys(state.vehicles).length > 0) {
+          activeFleet = state.vehicles;
+          if (state.global_duration) {
+            document.getElementById('global-duration-input').value = state.global_duration;
+          }
+          updateFleetListUI();
+        } else {
+          // Fallback to embedded state
+          const scriptTag = document.getElementById('vehicles-json-state');
+          if (scriptTag && scriptTag.textContent.trim()) {
+            const parsed = JSON.parse(scriptTag.textContent.trim());
+            if (parsed && parsed.vehicles && Object.keys(parsed.vehicles).length > 0) {
+              activeFleet = parsed.vehicles;
+              if (parsed.global_duration) {
+                document.getElementById('global-duration-input').value = parsed.global_duration;
               }
+              updateFleetListUI();
+            }
+          }
+        }
+      } catch (err) {
+        console.warn("Fleet state sync error:", err);
+      }
 
               // 2. Load saved report periods to populate period dropdown & delete options
               await loadSavedReportsList();
