@@ -352,6 +352,26 @@ export function generateHtmlReportContent(vehicles, globalDuration, options = {}
 
   </table>
 
+  <script>
+    document.addEventListener('click', function(e) {
+      var a = e.target.closest('a[href^="#"]');
+      if (a) {
+        var href = a.getAttribute('href');
+        if (href && href.startsWith('#')) {
+          e.preventDefault();
+          var targetId = href.slice(1);
+          var target = document.getElementById(targetId);
+          if (target) {
+            target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            target.style.transition = 'box-shadow 0.3s ease';
+            target.style.boxShadow = '0 0 0 3px rgba(37, 99, 235, 0.5)';
+            setTimeout(function() { target.style.boxShadow = ''; }, 1500);
+          }
+        }
+      }
+    });
+  </script>
+
 </body>
 </html>
 `;

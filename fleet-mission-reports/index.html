@@ -296,6 +296,30 @@
   const openExternalBtn = document.getElementById("open-external-btn");
   const assetVersion = "20260826";
 
+  // Handle in-page anchor navigation inside iframe without reloading the page
+  frame.addEventListener('load', () => {
+    try {
+      const doc = frame.contentDocument || frame.contentWindow.document;
+      if (!doc) return;
+      doc.addEventListener('click', (e) => {
+        const a = e.target.closest('a[href^="#"]');
+        if (a) {
+          const href = a.getAttribute('href');
+          if (href && href.startsWith('#')) {
+            e.preventDefault();
+            const target = doc.getElementById(href.slice(1));
+            if (target) {
+              target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+              target.style.transition = 'box-shadow 0.3s ease';
+              target.style.boxShadow = '0 0 0 3px rgba(37, 99, 235, 0.5)';
+              setTimeout(() => { target.style.boxShadow = ''; }, 1500);
+            }
+          }
+        }
+      });
+    } catch (err) {}
+  });
+
   function withVersion(path) {
     if (!path || path.startsWith("http")) return path;
     const separator = path.includes("?") ? "&" : "?";

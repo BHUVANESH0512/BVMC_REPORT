@@ -81,6 +81,14 @@ const server = http.createServer((req, res) => {
     filePath = path.join(filePath, 'index.html');
   }
 
+  // Fallback to static directory (e.g. /Boson_logo.png -> static/Boson_logo.png)
+  if (!fs.existsSync(filePath) || fs.statSync(filePath).isDirectory()) {
+    const staticPath = path.join(__dirname, 'static', pathname);
+    if (fs.existsSync(staticPath) && fs.statSync(staticPath).isFile()) {
+      filePath = staticPath;
+    }
+  }
+
   // Check if file exists
   if (!fs.existsSync(filePath) || fs.statSync(filePath).isDirectory()) {
     res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
