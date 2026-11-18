@@ -284,30 +284,8 @@
   import { getAllReports } from '../js/fleetApi.js';
   import { generateHtmlReportContent } from '../js/emailReportGenerator.js';
 
-  // Initial fallback reports array
-  let REPORTS = [
-    {
-      label: "September 2026",
-      range: "01-09-2026 to 15-09-2026",
-      file: "reports/report_01-09-2026_15-09-2026.html",
-      vehicles_label: "Customer Fleet (56 Vehicles)",
-      timestamp: "15-09-2026 18:00:00 PDT"
-    },
-    {
-      label: "August 2026",
-      range: "01-08-2026 to 31-08-2026",
-      file: "reports/report_01-08-2026_31-08-2026.html",
-      vehicles_label: "Customer Fleet (57 Vehicles)",
-      timestamp: "01-09-2026 22:46:41 PDT"
-    },
-    {
-      label: "August 2026",
-      range: "01-08-2026 to 15-08-2026",
-      file: "reports/report_2026-08-01_2026-08-15.html",
-      vehicles_label: "Customer Fleet (57 Vehicles)",
-      timestamp: "15-08-2026 18:00:00 PDT"
-    }
-  ];
+  // Dynamic reports array loaded from Supabase
+  let REPORTS = [];
 
   const listEl = document.getElementById("report-list");
   const countEl = document.getElementById("report-count");
@@ -377,20 +355,30 @@
     }
     const versionedFilePath = filePath ? withVersion(filePath) : null;
     
-    if (versionedFilePath) {
-      frame.src = versionedFilePath;
-    } else if (report.vehicles && Object.keys(report.vehicles).length > 0) {
+    if (report.vehicles && Object.keys(report.vehicles).length > 0) {
       frame.srcdoc = generateHtmlReportContent(report.vehicles, report.range || '');
+    } else if (versionedFilePath) {
+      frame.src = versionedFilePath;
     }
 
     frame.style.display = "block";
     emptyState.style.display = "none";
 
-    if (openExternalBtn && versionedFilePath) {
-      openExternalBtn.href = versionedFilePath;
+    if (openExternalBtn) {
+      openExternalBtn.onclick = (e) => {
+        e.preventDefault();
+        const html = (report.vehicles && Object.keys(report.vehicles).length > 0)
+          ? generateHtmlReportContent(report.vehicles, report.range || '')
+          : '';
+        if (html) {
+          const blob = new Blob([html], { type: 'text/html;charset=utf-8;' });
+          const url = URL.createObjectURL(blob);
+          window.open(url, '_blank');
+        } else if (versionedFilePath) {
+          window.open(versionedFilePath, '_blank');
+        }
+      };
       openExternalBtn.style.display = "inline-flex";
-    } else if (openExternalBtn) {
-      openExternalBtn.style.display = "none";
     }
   }
 
@@ -401,13 +389,23 @@
         REPORTS = data;
       }
     } catch (e) {
-      console.warn("Could not fetch reports from Supabase, using default list:", e);
+      console.warn("Could not fetch reports from Supabase:", e);
     }
     renderList();
     
     // Auto-select and display the latest report on page entry (no clicking needed)
     if (REPORTS.length > 0) {
       selectReport(0);
+    } else {
+      topbarTitle.textContent = "No reports published yet";
+      topbarRange.textContent = "";
+      emptyState.style.display = "block";
+      const h3 = emptyState.querySelector("h3");
+      const p = emptyState.querySelector("p");
+      if (h3) h3.textContent = "No reports available";
+      if (p) p.textContent = "Once a report is published from the Owner Builder, it will appear here.";
+      frame.style.display = "none";
+      if (openExternalBtn) openExternalBtn.style.display = "none";
     }
   }
 
