@@ -4,8 +4,8 @@
   "rewrites": [
     { "source": "/", "destination": "/fleet-mission-reports/index.html" },
     { "source": "/customer", "destination": "/fleet-mission-reports/index.html" },
-    { "source": "/owner", "destination": "/vehicle_mission_report-4.html" },
-    { "source": "/admin", "destination": "/vehicle_mission_report-4.html" },
+    { "source": "/owner", "destination": "/vehicle_mission_report.html" },
+    { "source": "/admin", "destination": "/vehicle_mission_report.html" },
     { "source": "/login", "destination": "/login.html" }
   ],
   "headers": [

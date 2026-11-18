@@ -14,8 +14,8 @@ import {
   buildIssueDetailTable
 } from './issueReport.js';
 
-// Absolute HTTPS URL for email clients (Gmail, Outlook block local file/relative paths)
-export const DEFAULT_LOGO_URL = "https://raw.githubusercontent.com/bosonmotors/assets/main/Boson_logo.png";
+// Standard logo path (served from /static/ directory by Vite & Vercel)
+export const DEFAULT_LOGO_URL = "/Boson_logo.png?v=20260826";
 export const FALLBACK_LOGO_URL = "/Boson_logo.png?v=20260826";
 
 /**
@@ -106,7 +106,7 @@ export function generateHtmlReportContent(vehicles, globalDuration, options = {}
     <!-- HEADER -->
     <tr>
       <td bgcolor="#1e293b" style="padding: 30px 24px; text-align: center;">
-        <img src="${esc(logoUrl)}" alt="Boson Motor" style="height: 76px; width: auto; max-width: 320px; object-fit: contain; display: block; margin: 0 auto 14px auto;">
+        <img src="${esc(logoUrl)}" onerror="this.onerror=null;this.src='/Boson_logo.png?v=20260826';" alt="Boson Motor" style="height: 76px; width: auto; max-width: 320px; object-fit: contain; display: block; margin: 0 auto 14px auto;">
         <p style="margin: 6px 0 0 0; color: #94a3b8; font-size: 14px; font-weight: 500;">Customer Vehicles Mission Report</p>
       </td>
     </tr>

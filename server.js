@@ -68,7 +68,7 @@ const server = http.createServer((req, res) => {
   if (pathname === '/' || pathname === '/customer' || pathname === '/customer/') {
     pathname = '/fleet-mission-reports/index.html';
   } else if (pathname === '/owner' || pathname === '/admin' || pathname === '/builder') {
-    pathname = '/vehicle_mission_report-4.html';
+    pathname = '/vehicle_mission_report.html';
   } else if (pathname === '/login') {
     pathname = '/login.html';
   }
@@ -106,7 +106,7 @@ server.listen(PORT, () => {
   console.log(`🚀 BVMC Report Server running at http://localhost:${PORT}`);
   console.log(`======================================================`);
   console.log(`  🌐 Customer Portal: http://localhost:${PORT}/fleet-mission-reports/`);
-  console.log(`  🛠️ Owner Dashboard: http://localhost:${PORT}/vehicle_mission_report-4.html`);
+  console.log(`  🛠️ Owner Dashboard: http://localhost:${PORT}/vehicle_mission_report.html`);
   console.log(`  🔐 Login Page:     http://localhost:${PORT}/login.html`);
   console.log(`------------------------------------------------------`);
   if (process.env.VITE_SUPABASE_URL && process.env.VITE_SUPABASE_URL !== 'https://your-project-ref.supabase.co') {

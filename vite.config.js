@@ -11,7 +11,7 @@ export default defineConfig({
       input: {
         main: resolve(__dirname, 'index.html'),
         customer: resolve(__dirname, 'fleet-mission-reports/index.html'),
-        owner: resolve(__dirname, 'vehicle_mission_report-4.html'),
+        owner: resolve(__dirname, 'vehicle_mission_report.html'),
         login: resolve(__dirname, 'login.html')
       }
     }
